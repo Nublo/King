@@ -6,28 +6,22 @@ define([
 ],
 function (dojo, declare) {
     return declare("bgagame.king", ebg.core.gamegui, {
-        constructor: function(){
+        constructor: function() {
             this.cardwidth = 72;
             this.cardheight = 96;
         },
         
-        setup: function( gamedatas )
-        {
-            console.log( "Starting game setup" );
+        setup: function(gamedatas) {
+            console.log("Starting game setup");
             
-            // Setting up player boards
-            for( var player_id in gamedatas.players )
-            {
+            for (var player_id in gamedatas.players) {
                 var player = gamedatas.players[player_id];
-                         
-                // TODO: Setting up players boards if needed
             }
             
             this.playerHand = new ebg.stock();
             this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
             this.playerHand.image_items_per_row = 13;
 
-            // ["spade", "hearts", "clups", "diamonds"]
             for (var color = 1; color <= 4; color++) {
                 for (var value = 7; value <= 14; value++) {
                     var card_type_id = this.getCardUniqueId(color, value);
@@ -35,23 +29,32 @@ function (dojo, declare) {
                 }
             }
 
-            // 2 = hearts, 5 is 5, and 42 is the card id, which normally would come from db
-            // TODO update with data comming in gameDatas
-            this.playerHand.addToStockWithId(this.getCardUniqueId(4, 11), 42);
-
-            // Setup game notifications to handle (see "setupNotifications" method below)
+            this.setupCardsInHand(this.gamedatas);
             this.setupNotifications();
 
-            console.log( "Ending game setup" );
+            dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+
+            console.log("Ending game setup");
         },
 
-        // ["spade", "hearts", "clups", "diamonds"]
-        getCardUniqueId : function(color, value) {
-            return (color - 1) * 13 + (value - 2);
+        setupCardsInHand: function(gamedatas) {
+            for (var i in gamedatas.hand) {
+                var card = gamedatas.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+
+            for (i in gamedatas.cardsontable) {
+                var card = gamedatas.cardsontable[i];
+                var color = card.type;
+                var value = card.type_arg;
+                var player_id = card.location_arg;
+                this.playCardOnTable(player_id, color, value, card.id);
+            }
         },
        
-        onEnteringState: function( stateName, args )
-        {
+        onEnteringState: function(stateName, args) {
             console.log( 'Entering state: '+stateName );
             
             switch( stateName )
@@ -76,8 +79,7 @@ function (dojo, declare) {
         // onLeavingState: this method is called each time we are leaving a game state.
         //                 You can use this method to perform some user interface changes at this moment.
         //
-        onLeavingState: function( stateName )
-        {
+        onLeavingState: function(stateName) {
             console.log( 'Leaving state: '+stateName );
             
             switch( stateName )
@@ -102,8 +104,7 @@ function (dojo, declare) {
         // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
         //                        action status bar (ie: the HTML links in the status bar).
         //        
-        onUpdateActionButtons: function( stateName, args )
-        {
+        onUpdateActionButtons: function(stateName, args) {
             console.log( 'onUpdateActionButtons: '+stateName );
                       
             if( this.isCurrentPlayerActive() )
@@ -124,67 +125,58 @@ function (dojo, declare) {
 */
                 }
             }
-        },        
+        },
 
-        ///////////////////////////////////////////////////
-        //// Utility methods
-        
-        /*
-        
-            Here, you can defines some utility methods that you can use everywhere in your javascript
-            script.
-        
-        */
+        // ["spade", "hearts", "clups", "diamonds"]
+        getCardUniqueId : function(color, value) {
+            return (color - 1) * 13 + (value - 2);
+        },
+
+        playCardOnTable : function(player_id, color, value, card_id) {
+            dojo.place(this.format_block('jstpl_cardontable', {
+                x : this.cardwidth * (value - 2),
+                y : this.cardheight * (color - 1),
+                player_id : player_id
+            }), 'playertablecard_' + player_id);
+
+            if (player_id != this.player_id) {
+                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
+            } else {
+                if ($('myhand_item_' + card_id)) {
+                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
+                    this.playerHand.removeFromStockById(card_id);
+                }
+            }
+
+            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
+        },
 
 
         ///////////////////////////////////////////////////
         //// Player's action
-        
-        /*
-        
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
-            game objects).
-            
-            Most of the time, these methods:
-            _ check the action is possible at this game state.
-            _ make a call to the game server
-        
-        */
-        
-        /* Example:
-        
-        onMyMethodToCall1: function( evt )
-        {
-            console.log( 'onMyMethodToCall1' );
-            
-            // Preventing default browser reaction
-            dojo.stopEvent( evt );
 
-            // Check that this action is possible (see "possibleactions" in states.inc.php)
-            if( ! this.checkAction( 'myAction' ) )
-            {   return; }
+        onPlayerHandSelectionChanged : function() {
+            var items = this.playerHand.getSelectedItems();
 
-            this.ajaxcall( "/king/king/myAction.html", { 
-                                                                    lock: true, 
-                                                                    myArgument1: arg1, 
-                                                                    myArgument2: arg2,
-                                                                    ...
-                                                                 }, 
-                         this, function( result ) {
-                            
-                            // What to do after the server call if it succeeded
-                            // (most of the time: nothing)
-                            
-                         }, function( is_error) {
+            if (items.length > 0) {
+                if (this.checkAction('playCard', true)) {
+                    var card_id = items[0].id;
+                    console.log("on playCard "+card_id);
 
-                            // What to do after the server call in anyway (success or failure)
-                            // (most of the time: nothing)
+                    var type = items[0].type;
+                    var color = Math.floor(type / 13) + 1;
+                    var value = type % 13 + 2;
+                    
+                    this.playCardOnTable(this.player_id,color,value,card_id);
 
-                         } );        
-        },        
-        
-        */
-
+                    this.playerHand.unselectAll();
+                } else if (this.checkAction('giveCards')) {
+                    // Can give cards => let the player select some cards
+                } else {
+                    this.playerHand.unselectAll();
+                }
+            }
+        },
         
         ///////////////////////////////////////////////////
         //// Reaction to cometD notifications
@@ -198,8 +190,7 @@ function (dojo, declare) {
                   your king.game.php file.
         
         */
-        setupNotifications: function()
-        {
+        setupNotifications: function() {
             console.log( 'notifications subscriptions setup' );
             
             // TODO: here, associate your game notifications with local methods
