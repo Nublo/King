@@ -1,48 +1,15 @@
-/**
- *------
- * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * King implementation : © <Your name here> <Your email address here>
- *
- * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
- * See http://en.boardgamearena.com/#!doc/Studio for more information.
- * -----
- *
- * king.js
- *
- * King user interface script
- * 
- * In this file, you are describing the logic of your user interface, in Javascript language.
- *
- */
-
 define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
-    "ebg/counter"
+    "ebg/counter",
+    "ebg/stock"
 ],
 function (dojo, declare) {
     return declare("bgagame.king", ebg.core.gamegui, {
         constructor: function(){
-            console.log('king constructor');
-              
-            // Here, you can init the global variables of your user interface
-            // Example:
-            // this.myGlobalValue = 0;
-
+            this.cardwidth = 72;
+            this.cardheight = 96;
         },
-        
-        /*
-            setup:
-            
-            This method must set up the game user interface according to current game situation specified
-            in parameters.
-            
-            The method is called each time the game interface is displayed to a player, ie:
-            _ when the game starts
-            _ when a player refreshes the game page (F5)
-            
-            "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
-        */
         
         setup: function( gamedatas )
         {
@@ -56,22 +23,33 @@ function (dojo, declare) {
                 // TODO: Setting up players boards if needed
             }
             
-            // TODO: Set up your game interface here, according to "gamedatas"
-            
- 
+            this.playerHand = new ebg.stock();
+            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.image_items_per_row = 13;
+
+            // ["spade", "hearts", "clups", "diamonds"]
+            for (var color = 1; color <= 4; color++) {
+                for (var value = 7; value <= 14; value++) {
+                    var card_type_id = this.getCardUniqueId(color, value);
+                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
+                }
+            }
+
+            // 2 = hearts, 5 is 5, and 42 is the card id, which normally would come from db
+            // TODO update with data comming in gameDatas
+            this.playerHand.addToStockWithId(this.getCardUniqueId(4, 11), 42);
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
             console.log( "Ending game setup" );
         },
-       
 
-        ///////////////////////////////////////////////////
-        //// Game & client states
-        
-        // onEnteringState: this method is called each time we are entering into a new game state.
-        //                  You can use this method to perform some user interface changes at this moment.
-        //
+        // ["spade", "hearts", "clups", "diamonds"]
+        getCardUniqueId : function(color, value) {
+            return (color - 1) * 13 + (value - 2);
+        },
+       
         onEnteringState: function( stateName, args )
         {
             console.log( 'Entering state: '+stateName );
@@ -239,19 +217,5 @@ function (dojo, declare) {
         
         // TODO: from this point and below, you can write your game notifications handling methods
         
-        /*
-        Example:
-        
-        notif_cardPlayed: function( notif )
-        {
-            console.log( 'notif_cardPlayed' );
-            console.log( notif );
-            
-            // Note: notif.args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-            
-            // TODO: play the card in the user interface.
-        },    
-        
-        */
    });             
 });
