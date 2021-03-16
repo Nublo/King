@@ -8,7 +8,8 @@ class King extends Table {
         self::initGameStateLabels(
             array(
                 "currentRound" => 10,
-                "roundTrump" => 11
+                "roundTrump" => 11,
+                "trick" => 12
             )
         );
 
@@ -42,6 +43,7 @@ class King extends Table {
     function setupGlobalValues() {
         self::setGameStateValue("currentRound", 0);
         self::setGameStateValue("roundTrump", -1);
+        self::setGameStateValue("trick", -1);
     }
 
     function setupCards() {
@@ -58,7 +60,8 @@ class King extends Table {
         $players = self::loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $cards = $this->cards->pickCards(10, 'deck', $player_id);
-        } 
+        }
+        $cards = $this->cards->pickCardsForLocation(2, 'deck', 'buyin')
     }
 
     protected function getAllDatas() {
@@ -79,116 +82,179 @@ class King extends Table {
     }
 
 //////////////////////////////////////////////////////////////////////////////
-//////////// Utility functions
-////////////    
-
-    /*
-        In this space, you can put any utility methods useful for your game logic
-    */
-
-
-
-//////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
-//////////// 
+////////////
 
-    /*
-        Each time a player is doing some game action, one of the methods below is called.
-        (note: each method below must match an input method in king.action.php)
-    */
-
-    /*
-    
-    Example:
-
-    function playCard( $card_id )
-    {
-        // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
-        self::checkAction( 'playCard' ); 
-        
+    function playCard($card_id) {
+        self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
-        
-        // Add your game logic to play a card there 
-        ...
-        
-        // Notify all players about the card played
-        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'card_name' => $card_name,
-            'card_id' => $card_id
-        ) );
-          
-    }
-    
-    */
+        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
+        // XXX check rules here
+        $currentCard = $this->cards->getCard($card_id);
 
+        $currentTrickColor = self::getGameStateValue('trick');
+        if ($currentTrickColor == 0) {
+            self::setGameStateValue('trick', $currentCard['type']);
+        }
+
+        self::notifyAllPlayers(
+            'playCard', 
+            clienttranslate('${player_name} plays ${value_displayed} ${color_displayed}'), 
+            array(
+                'i18n' => array('color_displayed', 'value_displayed'),
+                'card_id' => $card_id,
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'value' => $currentCard['type_arg'],
+                'value_displayed' => $this->values_label[$currentCard['type_arg']],
+                'color' => $currentCard['type'],
+                'color_displayed' => $this->colors[$currentCard['type']]['name']
+            )
+        );
+        $this->gamestate->nextState('playCard');
+    }
     
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state arguments
 ////////////
 
-    /*
-        Here, you can create methods defined as "game state arguments" (see "args" property in states.inc.php).
-        These methods function is to return some additional information that is specific to the current
-        game state.
-    */
-
-    /*
-    
-    Example for game state "MyGameState":
-    
-    function argMyGameState()
-    {
-        // Get some values from the current game situation in database...
-    
-        // return values:
-        return array(
-            'variable1' => $value1,
-            'variable2' => $value2,
-            ...
-        );
-    }    
-    */
+    function argGiveCards() {
+        return array();
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state actions
 ////////////
 
-    /*
-        Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
-        The action method of state X is called everytime the current game state is set to X.
-    */
-    
-    /*
-    
-    Example for game state "MyGameState":
+    function stNewHand() {
+        $this->cards->moveAllCardsInLocation(null, "deck");
+        $this->cards->shuffle('deck');
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $cards = $this->cards->pickCards(10, 'deck', $player_id);
+            self::notifyPlayer($player_id, 'newHand', '', array('cards' => $cards));
+        }
 
-    function stMyGameState()
-    {
-        // Do some stuff ...
+        $nextRound = $this->getGameStateValue("currentRound") + 1;
+        self::setGameStateValue("currentRound", $nextRound);
+        self::setGameStateValue("roundTrump", -1);
+        self::setGameStateValue("trick", 0);
+
+        $this->gamestate->nextState(""); // TODO potential update
+    }
+
+    function stNextPlayer() {
+        if ($this->cards->countCardInLocation('cardsontable') == 3) {
+            $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
+            $best_value = 0;
+            $best_value_player_id = null;
+            $currentTrickColor = self::getGameStateValue('trick');
+            foreach ($cards_on_table as $card) {
+                if ($card['type'] == $currentTrickColor) {
+                    if ($best_value_player_id === null || $card ['type_arg'] > $best_value) {
+                        $best_value_player_id = $card['location_arg'];
+                        $best_value = $card ['type_arg'];
+                    }
+                }
+            }
+            
+            $this->gamestate->changeActivePlayer($best_value_player_id);
+            $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
+
+            $players = self::loadPlayersBasicInfos();
+            self::notifyAllPlayers(
+                'trickWin', 
+                clienttranslate('${player_name} wins the trick'), 
+                array(
+                    'player_id' => $best_value_player_id,
+                    'player_name' => $players[$best_value_player_id]['player_name']
+                )
+            );            
+            self::notifyAllPlayers(
+                'giveAllCardsToPlayer',
+                '',
+                array('player_id' => $best_value_player_id)
+            );
         
-        // (very often) go to another gamestate
-        $this->gamestate->nextState( 'some_gamestate_transition' );
-    }    
-    */
+            if ($this->cards->countCardInLocation('hand') == 0) {
+                $this->gamestate->nextState("endHand");
+            } else {
+                $this->gamestate->nextState("nextTrick");
+            }
+        } else {
+            $player_id = self::activeNextPlayer();
+            self::giveExtraTime($player_id);
+            $this->gamestate->nextState('nextPlayer');
+        }
+    }
+
+    function stNewTrick() {
+        self::setGameStateInitialValue("trick", 0);
+        $this->gamestate->nextState();
+    }
+
+    function stEndHand() {
+        $players = self::loadPlayersBasicInfos();
+
+        $player_to_points = array();
+        foreach ($players as $player_id => $player) {
+            $player_to_points[$player_id] = 0;
+        }
+        $cards = $this->cards->getCardsInLocation("cardswon");
+        foreach ($cards as $card) {
+            $player_id = $card['location_arg'];
+            if ($card['type'] == 2) {
+                $player_to_points[$player_id] ++;
+            }
+        }
+        // Apply scores to player
+        foreach ($player_to_points as $player_id => $points) {
+            if ($points != 0) {
+                $sql = "UPDATE player SET player_score=player_score-$points  WHERE player_id='$player_id'";
+                self::DbQuery($sql);
+                $heart_number = $player_to_points[$player_id];
+                self::notifyAllPlayers(
+                    "points", 
+                    clienttranslate('${player_name} gets ${nbr} hearts and looses ${nbr} points'), 
+                    array(
+                        'player_id' => $player_id,
+                        'player_name' => $players[$player_id]['player_name'],
+                        'nbr' => $heart_number
+                    )
+                );
+            } else {
+                self::notifyAllPlayers(
+                    "points", 
+                    clienttranslate('${player_name} did not get any hearts'), 
+                    array(
+                        'player_id' => $player_id,
+                        'player_name' => $players[$player_id]['player_name']
+                    )
+                );
+            }
+        }
+        $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+        self::notifyAllPlayers(
+            "newScores",
+            '',
+            array('newScores' => $newScores)
+        );
+
+        ///// Test if this is the end of the game
+        foreach ( $newScores as $player_id => $score ) {
+            if ($score <= -100) {
+                // Trigger the end of the game !
+                $this->gamestate->nextState("endGame");
+                return;
+            }
+        }
+
+        $this->gamestate->nextState("nextHand");
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Zombie
 ////////////
-
-    /*
-        zombieTurn:
-        
-        This method is called each time it is the turn of a player who has quit the game (= "zombie" player).
-        You can do whatever you want in order to make sure the turn of this player ends appropriately
-        (ex: pass).
-        
-        Important: your zombie code will be called when the player leaves the game. This action is triggered
-        from the main site and propagated to the gameserver from a server, not from a browser.
-        As a consequence, there is no current player associated to this action. In your zombieTurn function,
-        you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message. 
-    */
 
     function zombieTurn($state, $active_player) {
     	$statename = $state['name'];
