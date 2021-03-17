@@ -36,6 +36,7 @@ class King extends Table {
         
         $this->setupGlobalValues();
         $this->setupCards();
+        $this->setupBids($players);
 
         $this->activeNextPlayer();
     }
@@ -61,7 +62,20 @@ class King extends Table {
         foreach ($players as $player_id => $player) {
             $cards = $this->cards->pickCards(10, 'deck', $player_id);
         }
-        $cards = $this->cards->pickCardsForLocation(2, 'deck', 'buyin')
+    }
+
+    // K Q J L H N + + +
+    function setupBids($players) {
+        $sql = "INSERT INTO bid (player_id, bid_type, is_allowed) VALUES ";
+        $values = array();
+        $is_allowed = true;
+        foreach($players as $player_id => $player) {
+            for ($bid_type = 0; $bid_type <= 8; $bid_type++) {
+                $values[] = "('".$player_id."','".$bid_type."','".$is_allowed."')";
+            }
+        }
+        $sql .= implode($values, ',');
+        self::DbQuery($sql);
     }
 
     protected function getAllDatas() {
@@ -79,6 +93,20 @@ class King extends Table {
 
     function getGameProgression() {
         return (int) ($this->getGameStateValue("currentRound") * 3.7);
+    }
+
+    function getActiveBids() {
+        $result = array();
+        $sql = "SELECT player_id, bid_type FROM bid WHERE is_allowed = 1";
+        $dbres = self::DbQuery($sql);
+        while ($row = mysql_fetch_assoc($dbres)) {
+            $player_id = $row['player_id'];
+            if (!isset($result[$player_id])) {
+                $result[$player_id] = array();
+            }
+            array_push($result[$player_id], $row['bid_type']);
+        }
+        return $result;
     }
 
 //////////////////////////////////////////////////////////////////////////////

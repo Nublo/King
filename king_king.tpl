@@ -20,6 +20,13 @@
     </div>
 </div>
 
+<div id="playerbids">
+    <!-- BEGIN bid -->
+    <div id="playerbid" class="whiteblock">
+        <h3>{PLAYER_NAME} : {PLAYER_BIDS}</h3>
+    </div>
+    <!-- END bid -->
+</div>
 
 <script type="text/javascript">
 
