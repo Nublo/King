@@ -26,6 +26,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must choose bid'),
         "type" => "activeplayer",
         "action" => "stNewBid",
+        "args" => "argChooseBid",
         "possibleactions" => array("selectBid"),
         "transitions" => array("" => 30)
     ),

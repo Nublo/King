@@ -51,71 +51,53 @@ function (dojo, declare) {
         },
        
         onEnteringState: function(stateName, args) {
-            console.log( 'Entering state: '+stateName );
+            console.log('Entering state: ' + stateName);
             
-            switch( stateName )
-            {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Show some HTML block at this game state
-                dojo.style( 'my_html_block_id', 'display', 'block' );
-                
-                break;
-           */
-           
-           
-            case 'dummmy':
+            switch(stateName) { 
+                case 'newBid':
                 break;
             }
         },
 
-        // onLeavingState: this method is called each time we are leaving a game state.
-        //                 You can use this method to perform some user interface changes at this moment.
-        //
         onLeavingState: function(stateName) {
-            console.log( 'Leaving state: '+stateName );
+            console.log('Leaving state: ' + stateName);
             
-            switch( stateName )
-            {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Hide the HTML block we are displaying only during this game state
-                dojo.style( 'my_html_block_id', 'display', 'none' );
-                
+            switch(stateName) {
+                case 'dummmy':
                 break;
-           */
-           
-           
-            case 'dummmy':
-                break;
-            }               
+            }            
         }, 
 
-        // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
-        //                        action status bar (ie: the HTML links in the status bar).
-        //        
         onUpdateActionButtons: function(stateName, args) {
-            console.log('onUpdateActionButtons: ' + stateName);
+            console.log('onUpdateActionButtons: ' + stateName + args);
                       
             if (this.isCurrentPlayerActive()) {            
                 switch(stateName) {
-                    case 'newBid': 
-                    this.addActionButton('bid_king', _('K'), 'onKingSelected');
-                    this.addActionButton('bid_queens', _('Q'), 'onQueensSelected');
-                    this.addActionButton('bid_jacks', _('J'), 'onJacksSelected');
-                    this.addActionButton('bid_last', _('L'), 'onLast2Selected');
-                    this.addActionButton('bid_hearts', _('H'), 'onHeartsSelected');
-                    this.addActionButton('bid_nothing', _('Q'), 'onNothingSelected');
-                    this.addActionButton('bid_plus_spades', _('+S'), 'onPlusSpadesSelected');
-                    this.addActionButton('bid_plus_hearts', _('+H'), 'onPlusHeartsSelected');
-                    this.addActionButton('bid_plus_diamonds', _('+D'), 'onPlusDiamondsSelected');
-                    this.addActionButton('bid_plus_clubs', _('+C'), 'onPlusClubsSelected');
+                    case 'newBid':
+                    if (args.includes("0")) {
+                        this.addActionButton('bid_king', _('K'), 'onKingSelected');
+                    }
+                    if (args.includes("1")) {
+                        this.addActionButton('bid_queens', _('Q'), 'onQueensSelected');
+                    }
+                    if (args.includes("2")) {
+                        this.addActionButton('bid_jacks', _('J'), 'onJacksSelected');
+                    }
+                    if (args.includes("3")) {
+                        this.addActionButton('bid_last', _('L'), 'onLast2Selected');
+                    }
+                    if (args.includes("4")) {
+                        this.addActionButton('bid_hearts', _('H'), 'onHeartsSelected');
+                    }
+                    if (args.includes("5")) {
+                        this.addActionButton('bid_nothing', _('Q'), 'onNothingSelected');
+                    }
+                    if (args.includes("6") || args.includes("7") || args.includes("8")) {
+                        this.addActionButton('bid_plus_spades', _('+S'), 'onPlusSpadesSelected');
+                        this.addActionButton('bid_plus_hearts', _('+H'), 'onPlusHeartsSelected');
+                        this.addActionButton('bid_plus_clubs', _('+C'), 'onPlusClubsSelected');
+                        this.addActionButton('bid_plus_diamonds', _('+D'), 'onPlusDiamondsSelected');
+                    }
                     break;
                 }
             }
@@ -176,48 +158,46 @@ function (dojo, declare) {
         },
 
         // Bid selection
-        onKingSelected : function() {
-            
+        onKingSelected : function() { this.selectBid(0); },
+
+        onQueensSelected : function() { this.selectBid(1); },
+
+        onJacksSelected : function() { this.selectBid(2); },
+
+        onLast2Selected : function() { this.selectBid(3); },
+
+        onHeartsSelected : function() { this.selectBid(4); },
+
+        onNothingSelected : function() { this.selectBid(5); },
+
+        onPlusSpadesSelected : function() { this.selectPlus(0); },
+
+        onPlusHeartsSelected : function() { this.selectPlus(1); },
+
+        onPlusClubsSelected : function() { this.selectPlus(2); },
+
+        onPlusDiamondsSelected : function() { this.selectPlus(3); },
+
+        selectBid : function(bidType) {
+            var action = 'selectBid';
+            this.ajaxcall(
+                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                {bidId : bidType, lock : true},
+                this, 
+                function(result) {}, 
+                function(is_error) {}
+            );
         },
 
-        onQueensSelected : function() {
-
-        },
-
-        onJacksSelected : function() {
-
-        },
-
-        onLast2Selected : function() {
-
-        },
-
-        onHeartsSelected : function() {
-
-        },
-
-        onNothingSelected : function() {
-
-        },
-
-        onNothingSelected : function() {
-
-        },
-
-        onPlusSpadesSelected : function() {
-
-        },
-
-        onPlusHeartsSelected : function() {
-
-        },
-
-        onPlusDiamondsSelected : function() {
-
-        },
-
-        onPlusClubsSelected : function() {
-
+        selectPlus : function(color) {
+            var action = 'selectBid';
+            this.ajaxcall(
+                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                {plusColor : color, lock : true},
+                this, 
+                function(result) {}, 
+                function(is_error) {}
+            );
         },
         
         ///////////////////////////////////////////////////

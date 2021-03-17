@@ -68,12 +68,16 @@ class King extends Table {
 
     // K Q J L H N + + +
     function setupPossibleBids($players) {
-        $sql = "INSERT INTO bid (player_id, bid_type, is_allowed) VALUES ";
+        $sql = "INSERT INTO bid (player_id, bid_type, is_allowed, is_plus) VALUES ";
         $values = array();
         $is_allowed = true;
         foreach($players as $player_id => $player) {
             for ($bid_type = 0; $bid_type <= 8; $bid_type++) {
-                $values[] = "('".$player_id."','".$bid_type."','".$is_allowed."')";
+                $is_plus = false;
+                if ($bid_type > 5) {
+                    $is_plus = true;
+                }
+                $values[] = "('".$player_id."','".$bid_type."','".$is_allowed."','".$is_plus."')";
             }
         }
         $sql .= implode($values, ',');
@@ -126,6 +130,9 @@ class King extends Table {
     }
 
     function bidToLongReadable($bid_type, $color) {
+        if (!isset($bid_type)) {
+            return "Plus. Trick is " . $this->colorToReadble($color);
+        }
         switch ($bid_type) {
             case 0: return "Don't take King of Hearts";
             case 1: return "Don't take Queens";
@@ -133,9 +140,6 @@ class King extends Table {
             case 3: return "Don't take 2 Last";
             case 4: return "Don't take Hearts";
             case 5: return "Don't take Nothing";
-            case 6: return "Plus. Trick is " . colorToReadble($color);
-            case 7: return "Plus. Trick is " . colorToReadble($color);
-            case 8: return "Plus. Trick is " . colorToReadble($color);
         }
     }
 
@@ -157,18 +161,30 @@ class King extends Table {
         self::checkAction("selectBid");
         $player_id = self::getActivePlayerId();
 
-        $sql = "SELECT is_allowed FROM bid WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
-        $row = mysql_fetch_assoc(self::DbQuery($sql));
-        if (!$row['is_allowed']) {
-            throw new BgaUserException(bidToReadable($bid_type) . " was alredy played");
-        }
+        if (isset($bid_type)) {
+            $sql = "SELECT is_allowed FROM bid WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
+            $row = mysql_fetch_assoc(self::DbQuery($sql));
+            if (!$row['is_allowed']) {
+                throw new BgaUserException(bidToReadable($bid_type) . " was alredy played");
+            }
 
-        $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
-        self::DbQuery($sql);
+            $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
+            self::DbQuery($sql);
+        } else {
+            $sql = "SELECT bid_type FROM bid WHERE player_id = '$player_id' AND is_plus = 1 AND is_allowed = 1 LIMIT 1";
+            $result = self::DbQuery($sql);
+            if (mysqli_num_rows($result) == 0) {
+                throw new BgaUserException("All pluses where already used");
+            }
+            $bidToUpdate = mysql_fetch_assoc($result)['bid_type'];
+
+            $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bidToUpdate'";
+            self::DbQuery($sql);
+        }
 
         // TODO probably we should notify users about the full bid stat update
         self::notifyAllPlayers(
-            'selectBid',
+            'selectedBid',
             clienttranslate('${player_name} selected to play ${bid_value}'),
             array(
                 'player_name' => self::getActivePlayerName(),
@@ -214,8 +230,17 @@ class King extends Table {
 //////////// Game state arguments
 ////////////
 
-    function argGiveCards() {
-        return array();
+    function argChooseBid() {
+        $player_id = self::getActivePlayerId();
+        $sql = "SELECT bid_type FROM bid WHERE player_id = '$player_id' AND is_allowed = 1 ORDER by bid_type";
+        $dbres = self::DbQuery($sql);
+        $result = array();
+
+        while ($row = mysql_fetch_assoc($dbres)) {
+            $result[] = $row['bid_type'];
+        }
+
+        return $result;
     }
 
 //////////////////////////////////////////////////////////////////////////////

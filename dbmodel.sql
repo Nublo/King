@@ -19,5 +19,6 @@ CREATE TABLE IF NOT EXISTS `card` (
 CREATE TABLE IF NOT EXISTS `bid` (
 	`player_id` int(10) unsigned NOT NULL,
 	`bid_type` int(10) NOT NULL,
-	`is_allowed` BOOLEAN
+	`is_allowed` BOOLEAN,
+	`is_plus` BOOLEAN
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
