@@ -104,9 +104,23 @@ class King extends Table {
             if (!isset($result[$player_id])) {
                 $result[$player_id] = array();
             }
-            array_push($result[$player_id], $row['bid_type']);
+            array_push($result[$player_id], $this->bidToReadable($row['bid_type']));
         }
         return $result;
+    }
+
+    function bidToReadable($bid_type) {
+        switch ($bid_type) {
+            case 0: return "K";
+            case 1: return "Q";
+            case 2: return "J";
+            case 3: return "L";
+            case 4: return "H";
+            case 5: return "N";
+            case 6: return "+";
+            case 7: return "+";
+            case 8: return "+";
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////
