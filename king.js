@@ -90,7 +90,7 @@ function (dojo, declare) {
                         this.addActionButton('bid_hearts', _('H'), 'onHeartsSelected');
                     }
                     if (args.includes("5")) {
-                        this.addActionButton('bid_nothing', _('Q'), 'onNothingSelected');
+                        this.addActionButton('bid_nothing', _('N'), 'onNothingSelected');
                     }
                     if (args.includes("6") || args.includes("7") || args.includes("8")) {
                         this.addActionButton('bid_plus_spades', _('+S'), 'onPlusSpadesSelected');
