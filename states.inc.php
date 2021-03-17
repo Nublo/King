@@ -18,24 +18,16 @@ $machinestates = array(
         "type" => "game",
         "action" => "stNewHand",
         "updateGameProgression" => true,   
-        "transitions" => array("" => 30)
+        "transitions" => array("" => 21)
     ),
     21 => array(       
-        "name" => "giveCards",
-        "description" => clienttranslate('Some players must choose 3 cards to give to ${direction}'),
-        "descriptionmyturn" => clienttranslate('${you} must choose 3 cards to give to ${direction}'),
-        "type" => "multipleactiveplayer",
-        "action" => "stGiveCards",
-        "args" => "argGiveCards",
-        "possibleactions" => array("giveCards"),
-        "transitions" => array("giveCards" => 22, "skip" => 22)
-    ),
-    22 => array(
-        "name" => "takeCards",
-        "description" => "",
-        "type" => "game",
-        "action" => "stTakeCards",
-        "transitions" => array("startHand" => 30, "skip" => 30)
+        "name" => "newBid",
+        "description" => clienttranslate('${actplayer} must choose bid'),
+        "descriptionmyturn" => clienttranslate('${you} must choose bid'),
+        "type" => "activeplayer",
+        "action" => "stNewBid",
+        "possibleactions" => array("selectBid"),
+        "transitions" => array("" => 30)
     ),
     
     /// Trick

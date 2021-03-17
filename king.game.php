@@ -9,7 +9,8 @@ class King extends Table {
             array(
                 "currentRound" => 10,
                 "roundTrump" => 11,
-                "trick" => 12
+                "trick" => 12,
+                "bidType" => 13
             )
         );
 
@@ -36,7 +37,7 @@ class King extends Table {
         
         $this->setupGlobalValues();
         $this->setupCards();
-        $this->setupBids($players);
+        $this->setupPossibleBids($players);
 
         $this->activeNextPlayer();
     }
@@ -45,12 +46,13 @@ class King extends Table {
         self::setGameStateValue("currentRound", 0);
         self::setGameStateValue("roundTrump", -1);
         self::setGameStateValue("trick", -1);
+        self::setGameStateValue("bidType", -1);
     }
 
     function setupCards() {
         $cards = array();
         foreach ($this->colors as $color_id => $color) {
-            // [spade, heart, diamond, club]
+            // ["spades", "hearts", "clubs", "diamonds"]
             for ($value = 7; $value <= 14; $value ++) {
                 $cards[] = array('type' => $color_id, 'type_arg' => $value,'nbr' => 1);
             }
@@ -65,7 +67,7 @@ class King extends Table {
     }
 
     // K Q J L H N + + +
-    function setupBids($players) {
+    function setupPossibleBids($players) {
         $sql = "INSERT INTO bid (player_id, bid_type, is_allowed) VALUES ";
         $values = array();
         $is_allowed = true;
@@ -123,9 +125,61 @@ class King extends Table {
         }
     }
 
+    function bidToLongReadable($bid_type, $color) {
+        switch ($bid_type) {
+            case 0: return "Don't take King of Hearts";
+            case 1: return "Don't take Queens";
+            case 2: return "Don't take Jacks";
+            case 3: return "Don't take 2 Last";
+            case 4: return "Don't take Hearts";
+            case 5: return "Don't take Nothing";
+            case 6: return "Plus. Trick is " . colorToReadble($color);
+            case 7: return "Plus. Trick is " . colorToReadble($color);
+            case 8: return "Plus. Trick is " . colorToReadble($color);
+        }
+    }
+
+    // ["spades", "hearts", "clubs", "diamonds"]
+    function colorToReadble($color) {
+        switch ($color) {
+            case 0: return "Spade";
+            case 1: return "Heart";
+            case 2: return "Club";
+            case 3: return "Diamond";
+        }
+    }
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
 ////////////
+
+    function selectBid($bid_type, $color) {
+        self::checkAction("selectBid");
+        $player_id = self::getActivePlayerId();
+
+        $sql = "SELECT is_allowed FROM bid WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
+        $row = mysql_fetch_assoc(self::DbQuery($sql));
+        if (!$row['is_allowed']) {
+            throw new BgaUserException(bidToReadable($bid_type) . " was alredy played");
+        }
+
+        $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
+        self::DbQuery($sql);
+
+        // TODO probably we should notify users about the full bid stat update
+        self::notifyAllPlayers(
+            'selectBid',
+            clienttranslate('${player_name} selected to play ${bid_value}'),
+            array(
+                'player_name' => self::getActivePlayerName(),
+                'bid_value' => $this->bidToLongReadable($bid_type, $color),
+                'bid_type' => $bid_type,
+                'color' => $color
+            )
+        );
+
+        $this->gamestate->nextState(""); // OPEN buyin for everyone, not yet implemented
+    }
 
     function playCard($card_id) {
         self::checkAction("playCard");
@@ -168,6 +222,10 @@ class King extends Table {
 //////////// Game state actions
 ////////////
 
+    function stNewBid() {
+        self::setGameStateValue("bidType", -1);
+    }
+
     function stNewHand() {
         $this->cards->moveAllCardsInLocation(null, "deck");
         $this->cards->shuffle('deck');
@@ -182,7 +240,7 @@ class King extends Table {
         self::setGameStateValue("roundTrump", -1);
         self::setGameStateValue("trick", 0);
 
-        $this->gamestate->nextState(""); // TODO potential update
+        $this->gamestate->nextState("");
     }
 
     function stNextPlayer() {

@@ -12,8 +12,6 @@ function (dojo, declare) {
         },
         
         setup: function(gamedatas) {
-            console.log("Starting game setup");
-            
             for (var player_id in gamedatas.players) {
                 var player = gamedatas.players[player_id];
             }
@@ -33,8 +31,6 @@ function (dojo, declare) {
             this.setupNotifications();
 
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
-
-            console.log("Ending game setup");
         },
 
         setupCardsInHand: function(gamedatas) {
@@ -105,29 +101,27 @@ function (dojo, declare) {
         //                        action status bar (ie: the HTML links in the status bar).
         //        
         onUpdateActionButtons: function(stateName, args) {
-            console.log( 'onUpdateActionButtons: '+stateName );
+            console.log('onUpdateActionButtons: ' + stateName);
                       
-            if( this.isCurrentPlayerActive() )
-            {            
-                switch( stateName )
-                {
-/*               
-                 Example:
- 
-                 case 'myGameState':
-                    
-                    // Add 3 action buttons in the action status bar:
-                    
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
+            if (this.isCurrentPlayerActive()) {            
+                switch(stateName) {
+                    case 'newBid': 
+                    this.addActionButton('bid_king', _('K'), 'onKingSelected');
+                    this.addActionButton('bid_queens', _('Q'), 'onQueensSelected');
+                    this.addActionButton('bid_jacks', _('J'), 'onJacksSelected');
+                    this.addActionButton('bid_last', _('L'), 'onLast2Selected');
+                    this.addActionButton('bid_hearts', _('H'), 'onHeartsSelected');
+                    this.addActionButton('bid_nothing', _('Q'), 'onNothingSelected');
+                    this.addActionButton('bid_plus_spades', _('+S'), 'onPlusSpadesSelected');
+                    this.addActionButton('bid_plus_hearts', _('+H'), 'onPlusHeartsSelected');
+                    this.addActionButton('bid_plus_diamonds', _('+D'), 'onPlusDiamondsSelected');
+                    this.addActionButton('bid_plus_clubs', _('+C'), 'onPlusClubsSelected');
                     break;
-*/
                 }
             }
         },
 
-        // ["spades", "hearts", "clups", "diamonds"]
+        // ["spades", "hearts", "clubs", "diamonds"]
         getCardUniqueId : function(color, value) {
             return (color - 1) * 13 + (value - 2);
         },
@@ -179,6 +173,51 @@ function (dojo, declare) {
                     this.playerHand.unselectAll();
                 }
             }
+        },
+
+        // Bid selection
+        onKingSelected : function() {
+            
+        },
+
+        onQueensSelected : function() {
+
+        },
+
+        onJacksSelected : function() {
+
+        },
+
+        onLast2Selected : function() {
+
+        },
+
+        onHeartsSelected : function() {
+
+        },
+
+        onNothingSelected : function() {
+
+        },
+
+        onNothingSelected : function() {
+
+        },
+
+        onPlusSpadesSelected : function() {
+
+        },
+
+        onPlusHeartsSelected : function() {
+
+        },
+
+        onPlusDiamondsSelected : function() {
+
+        },
+
+        onPlusClubsSelected : function() {
+
         },
         
         ///////////////////////////////////////////////////
