@@ -110,51 +110,20 @@ class King extends Table {
             if (!isset($result[$player_id])) {
                 $result[$player_id] = array();
             }
-            array_push($result[$player_id], $this->bidToReadable($row['bid_type']));
+            array_push($result[$player_id], $this->bids_label[$row['bid_type']]);
         }
         return $result;
     }
 
-    function bidToReadable($bid_type) {
-        switch ($bid_type) {
-            case 0: return "K";
-            case 1: return "Q";
-            case 2: return "J";
-            case 3: return "L";
-            case 4: return "H";
-            case 5: return "N";
-            case 6: return "+";
-            case 7: return "+";
-            case 8: return "+";
-        }
-    }
-
     function bidToLongReadable($bid_type, $color) {
         if (!isset($bid_type)) {
-            return "Plus. Trick is " . $this->colorToReadble($color);
+            return "Plus. Trump is " . $this->colors[$color + 1]['emoji'];
         }
-        switch ($bid_type) {
-            case 0: return "Don't take King of Hearts";
-            case 1: return "Don't take Queens";
-            case 2: return "Don't take Jacks";
-            case 3: return "Don't take 2 Last";
-            case 4: return "Don't take Hearts";
-            case 5: return "Don't take Nothing";
-        }
-    }
-
-    // ["spades", "hearts", "clubs", "diamonds"]
-    function colorToReadble($color) {
-        switch ($color) {
-            case 0: return "Spade";
-            case 1: return "Heart";
-            case 2: return "Club";
-            case 3: return "Diamond";
-        }
+        return $this->bids_long_label[$bid_type];
     }
 
     function cardToString($card) {
-        return $this->values_label[$card['type_arg']] . " of " . $this->colors[$card['type']]['name'];
+        return $this->values_label[$card['type_arg']] . $this->colors[$card['type']]['emoji'];
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -186,7 +155,7 @@ class King extends Table {
             self::DbQuery($sql);
         }
 
-        // TODO probably we should notify users about the full bid stat update
+        // TODO probably we should notify users about the full bids state to update the UI
         self::notifyAllPlayers(
             'selectedBid',
             clienttranslate('${player_name} selected to play ${bid_value}'),
@@ -202,18 +171,23 @@ class King extends Table {
         $first_card = array_shift($buyIn);
         $second_card = array_shift($buyIn);
         self::notifyAllPlayers(
-            'openBuyIn', 
-            clienttranslate('Buyin has ${first_card} and ${second_card}'), 
+            'openBuyin', 
+            clienttranslate('Buyin: ${first_card} ${second_card}'), 
             array(
                 'player_id' => $player_id,
                 'first_card' => $this->cardToString($first_card),
                 'second_card' => $this->cardToString($second_card)
             )
         );
-        self::notifyAllPlayers(
-            'giveBuyInToPlayer',
+
+        self::notifyPlayer(
+            $player_id,
+            'giveBuyinToPlayer',
             '',
-            array('player_id' => $player_id)
+            array(
+                'first_card' => $first_card,
+                'second_card' => $second_card
+            )
         );
         $this->cards->pickCards(2, 'deck', $player_id);
 
@@ -291,7 +265,7 @@ class King extends Table {
         self::setGameStateValue("bidType", -1);
     }
 
-    function stDiscardBuyIn() {
+    function stDiscard() {
         // TODO add functionality
     }
 

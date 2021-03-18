@@ -31,12 +31,12 @@ $machinestates = array(
         "transitions" => array("" => 22)
     ),
     22 => array(
-        "name" => "discardBuyIn",
+        "name" => "discard",
         "description" => clienttranslate('${actplayer} must discard 2 cards'),
-        "descriptionmyturn" => clienttranslate('${you} must discard buyin'),
+        "descriptionmyturn" => clienttranslate('${you} must discard 2 cards'),
         "type" => "activeplayer",
-        "action" => "stDiscardBuyIn",
-        "possibleactions" => array("discardBuyIn"),
+        "action" => "stDiscard",
+        "possibleactions" => array("discard"),
         "transitions" => array("" => 30)
     ),
     

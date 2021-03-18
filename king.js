@@ -36,9 +36,7 @@ function (dojo, declare) {
         setupCardsInHand: function(gamedatas) {
             for (var i in gamedatas.hand) {
                 var card = gamedatas.hand[i];
-                var color = card.type;
-                var value = card.type_arg;
-                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.addCardToHand(card);
             }
 
             for (i in gamedatas.cardsontable) {
@@ -54,8 +52,6 @@ function (dojo, declare) {
             console.log('Entering state: ' + stateName);
             
             switch(stateName) { 
-                case 'newBid':
-                break;
             }
         },
 
@@ -63,8 +59,6 @@ function (dojo, declare) {
             console.log('Leaving state: ' + stateName);
             
             switch(stateName) {
-                case 'dummmy':
-                break;
             }            
         }, 
 
@@ -93,10 +87,10 @@ function (dojo, declare) {
                         this.addActionButton('bid_nothing', _('N'), 'onNothingSelected');
                     }
                     if (args.includes("6") || args.includes("7") || args.includes("8")) {
-                        this.addActionButton('bid_plus_spades', _('+S'), 'onPlusSpadesSelected');
-                        this.addActionButton('bid_plus_hearts', _('+H'), 'onPlusHeartsSelected');
-                        this.addActionButton('bid_plus_clubs', _('+C'), 'onPlusClubsSelected');
-                        this.addActionButton('bid_plus_diamonds', _('+D'), 'onPlusDiamondsSelected');
+                        this.addActionButton('bid_plus_spades', _('♠️'), 'onPlusSpadesSelected');
+                        this.addActionButton('bid_plus_hearts', _('♥️️'), 'onPlusHeartsSelected');
+                        this.addActionButton('bid_plus_clubs', _('♣️'), 'onPlusClubsSelected');
+                        this.addActionButton('bid_plus_diamonds', _('♦️'), 'onPlusDiamondsSelected');
                     }
                     break;
                 }
@@ -106,6 +100,12 @@ function (dojo, declare) {
         // ["spades", "hearts", "clubs", "diamonds"]
         getCardUniqueId : function(color, value) {
             return (color - 1) * 13 + (value - 2);
+        },
+
+        addCardToHand : function(card) {
+            var color = card.type;
+            var value = card.type_arg;
+            this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
         },
 
         playCardOnTable : function(player_id, color, value, card_id) {
@@ -205,6 +205,11 @@ function (dojo, declare) {
 
         setupNotifications: function() {
             dojo.subscribe('newHand', this, "notif_newHand");
+
+            dojo.subscribe('openBuyin', this, "notif_openBuyin");
+            // this.notifqueue.setSynchronous('openBuyin', 3000);
+            dojo.subscribe('giveBuyinToPlayer', this, "notif_giveBuyinToPlayer");
+
             dojo.subscribe('playCard', this, "notif_playCard");
             dojo.subscribe('trickWin', this, "notif_trickWin");
             this.notifqueue.setSynchronous('trickWin', 1000);
@@ -217,10 +222,17 @@ function (dojo, declare) {
 
             for (var i in notif.args.cards) {
                 var card = notif.args.cards[i];
-                var color = card.type;
-                var value = card.type_arg;
-                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.addCardToHand(card);
             }
+        },
+
+        notif_openBuyin : function(notif) {
+            // TODO open cards and present them on table
+        },
+
+        notif_giveBuyinToPlayer : function(notif) {
+            this.addCardToHand(notif.args.first_card);
+            this.addCardToHand(notif.args.second_card);
         },
 
         notif_playCard : function(notif) {
