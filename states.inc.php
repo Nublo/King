@@ -11,7 +11,7 @@ $machinestates = array(
         "transitions" => array("" => 20)
     ),
 
-    /// New hand
+    // New hand
     20 => array(
         "name" => "newHand",
         "description" => "",
@@ -28,10 +28,19 @@ $machinestates = array(
         "action" => "stNewBid",
         "args" => "argChooseBid",
         "possibleactions" => array("selectBid"),
+        "transitions" => array("" => 22)
+    ),
+    22 => array(
+        "name" => "discardBuyIn",
+        "description" => clienttranslate('${actplayer} must discard 2 cards'),
+        "descriptionmyturn" => clienttranslate('${you} must discard buyin'),
+        "type" => "activeplayer",
+        "action" => "stDiscardBuyIn",
+        "possibleactions" => array("discardBuyIn"),
         "transitions" => array("" => 30)
     ),
     
-    /// Trick
+    // Trick
     30 => array(
         "name" => "newTrick",
         "description" => "",

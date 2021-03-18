@@ -153,6 +153,10 @@ class King extends Table {
         }
     }
 
+    function cardToString($card) {
+        return $this->values_label[$card['type_arg']] . " of " . $this->colors[$card['type']]['name'];
+    }
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
 ////////////
@@ -194,7 +198,26 @@ class King extends Table {
             )
         );
 
-        $this->gamestate->nextState(""); // OPEN buyin for everyone, not yet implemented
+        $buyIn = $this->cards->getCardsInLocation('deck');
+        $first_card = array_shift($buyIn);
+        $second_card = array_shift($buyIn);
+        self::notifyAllPlayers(
+            'openBuyIn', 
+            clienttranslate('Buyin has ${first_card} and ${second_card}'), 
+            array(
+                'player_id' => $player_id,
+                'first_card' => $this->cardToString($first_card),
+                'second_card' => $this->cardToString($second_card)
+            )
+        );
+        self::notifyAllPlayers(
+            'giveBuyInToPlayer',
+            '',
+            array('player_id' => $player_id)
+        );
+        $this->cards->pickCards(2, 'deck', $player_id);
+
+        $this->gamestate->nextState("");
     }
 
     function playCard($card_id) {
@@ -247,10 +270,6 @@ class King extends Table {
 //////////// Game state actions
 ////////////
 
-    function stNewBid() {
-        self::setGameStateValue("bidType", -1);
-    }
-
     function stNewHand() {
         $this->cards->moveAllCardsInLocation(null, "deck");
         $this->cards->shuffle('deck');
@@ -266,6 +285,14 @@ class King extends Table {
         self::setGameStateValue("trick", 0);
 
         $this->gamestate->nextState("");
+    }
+
+    function stNewBid() {
+        self::setGameStateValue("bidType", -1);
+    }
+
+    function stDiscardBuyIn() {
+        // TODO add functionality
     }
 
     function stNextPlayer() {
