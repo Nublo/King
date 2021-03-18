@@ -135,22 +135,27 @@ function (dojo, declare) {
             var items = this.playerHand.getSelectedItems();
 
             if (items.length > 0) {
-                var action = 'playCard';
-                if (this.checkAction(action, true)) {
+                if (this.checkAction('playCard', true)) {
                     var card_id = items[0].id;                  
                     this.ajaxcall(
-                        "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                        "/" + this.game_name + "/" + this.game_name + "/playCard.html", 
                         {id : card_id, lock : true},
                         this, 
-                        function(result) {
-
-                        }, 
-                        function(is_error) {
-
-                        });
+                        function(result) {},
+                        function(is_error) {}
+                    );
                     this.playerHand.unselectAll();
-                } else if (this.checkAction('giveCards')) {
-                    // Can give cards => let the player select some cards
+                } else if (this.checkAction('discard', true)) {
+                    if (items.length == 2) {
+                        this.ajaxcall(
+                            "/" + this.game_name + "/" + this.game_name + "/discard.html", 
+                            {id1 : items[0].id, id2 : items[1].id, lock : true},
+                            this,
+                            function(result) {}, 
+                            function(is_error) {}
+                        );
+                        this.playerHand.unselectAll();
+                    }
                 } else {
                     this.playerHand.unselectAll();
                 }
@@ -179,9 +184,8 @@ function (dojo, declare) {
         onPlusDiamondsSelected : function() { this.selectPlus(3); },
 
         selectBid : function(bidType) {
-            var action = 'selectBid';
             this.ajaxcall(
-                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
                 {bidId : bidType, lock : true},
                 this, 
                 function(result) {}, 
@@ -190,9 +194,8 @@ function (dojo, declare) {
         },
 
         selectPlus : function(color) {
-            var action = 'selectBid';
             this.ajaxcall(
-                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
                 {plusColor : color, lock : true},
                 this, 
                 function(result) {}, 
@@ -209,6 +212,8 @@ function (dojo, declare) {
             dojo.subscribe('openBuyin', this, "notif_openBuyin");
             // this.notifqueue.setSynchronous('openBuyin', 3000);
             dojo.subscribe('giveBuyinToPlayer', this, "notif_giveBuyinToPlayer");
+
+            dojo.subscribe('discard', this, "notif_discard");
 
             dojo.subscribe('playCard', this, "notif_playCard");
             dojo.subscribe('trickWin', this, "notif_trickWin");
@@ -233,6 +238,11 @@ function (dojo, declare) {
         notif_giveBuyinToPlayer : function(notif) {
             this.addCardToHand(notif.args.first_card);
             this.addCardToHand(notif.args.second_card);
+        },
+
+        notif_discard : function(notif) {
+            this.playerHand.removeFromStockById(notif.args.first_card_id);
+            this.playerHand.removeFromStockById(notif.args.second_card_id);
         },
 
         notif_playCard : function(notif) {

@@ -194,6 +194,23 @@ class King extends Table {
         $this->gamestate->nextState("");
     }
 
+    function discard($card_id1, $card_id2) {
+        $player_id = self::getActivePlayerId();
+        $this->cards->moveCard($card_id1, 'discard', $player_id);
+        $this->cards->moveCard($card_id2, 'discard', $player_id);
+        self::notifyPlayer(
+            $player_id,
+            'discard',
+            '',
+            array(
+                'first_card_id' => $card_id1,
+                'second_card_id' => $card_id2
+            )
+        );
+
+        $this->gamestate->nextState("");
+    }
+
     function playCard($card_id) {
         self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
@@ -208,16 +225,15 @@ class King extends Table {
 
         self::notifyAllPlayers(
             'playCard', 
-            clienttranslate('${player_name} plays ${value_displayed} ${color_displayed}'), 
+            clienttranslate('${player_name} plays ${value_displayed}'), 
             array(
                 'i18n' => array('color_displayed', 'value_displayed'),
                 'card_id' => $card_id,
                 'player_id' => $player_id,
                 'player_name' => self::getActivePlayerName(),
                 'value' => $currentCard['type_arg'],
-                'value_displayed' => $this->values_label[$currentCard['type_arg']],
-                'color' => $currentCard['type'],
-                'color_displayed' => $this->colors[$currentCard['type']]['name']
+                'value_displayed' => $this->cardToString($currentCard),
+                'color' => $currentCard['type']
             )
         );
         $this->gamestate->nextState('playCard');
@@ -266,7 +282,12 @@ class King extends Table {
     }
 
     function stDiscard() {
-        // TODO add functionality
+        // TODO add functionality. Looks like we don't need to update any state, Double check later
+    }
+
+    function stNewTrick() {
+        self::setGameStateInitialValue("trick", 0);
+        $this->gamestate->nextState();
     }
 
     function stNextPlayer() {
@@ -312,11 +333,6 @@ class King extends Table {
             self::giveExtraTime($player_id);
             $this->gamestate->nextState('nextPlayer');
         }
-    }
-
-    function stNewTrick() {
-        self::setGameStateInitialValue("trick", 0);
-        $this->gamestate->nextState();
     }
 
     function stEndHand() {

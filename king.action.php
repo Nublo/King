@@ -27,4 +27,12 @@ class action_king extends APP_GameAction {
     self::ajaxResponse();
   }
 
+  public function discard() {
+    self::setAjaxMode();
+    $card_id1 = self::getArg("id1", AT_posint, true);
+    $card_id2 = self::getArg("id2", AT_posint, true);
+    $this->game->discard($card_id1, $card_id2);
+    self::ajaxResponse();
+  }
+
 }
