@@ -184,6 +184,7 @@ function (dojo, declare) {
         onPlusDiamondsSelected : function() { this.selectPlus(3); },
 
         selectBid : function(bidType) {
+            console.log("bidType - " + bidType + ";");
             this.ajaxcall(
                 "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
                 {bidId : bidType, lock : true},
@@ -193,10 +194,11 @@ function (dojo, declare) {
             );
         },
 
-        selectPlus : function(color) {
+        selectPlus : function(cardColor) {
+            console.log("color - " + cardColor + ";");
             this.ajaxcall(
                 "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
-                {plusColor : color, lock : true},
+                {bidColor : cardColor, lock : true},
                 this, 
                 function(result) {}, 
                 function(is_error) {}

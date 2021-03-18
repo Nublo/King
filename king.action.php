@@ -5,7 +5,7 @@ class action_king extends APP_GameAction {
   public function __default() {
     if (self::isArg('notifwindow')) {
       $this->view = "common_notifwindow";
-      $this->viewArgs['table'] = self::getArg( "table", AT_posint, true );
+      $this->viewArgs['table'] = self::getArg("table", AT_posint, true);
     } else {
       $this->view = "king_king";
       self::trace("Complete reinitialization of board game");
@@ -21,9 +21,9 @@ class action_king extends APP_GameAction {
 
   public function selectBid() {
     self::setAjaxMode();
-    $bid_type = self::getArg("bidId", AT_posint);
-    $color = self::getArg("plusColor", AT_posint);
-    $this->game->selectBid($bid_type, $color);
+    $bid_type = self::getArg("bidId", AT_int);
+    $bid_color = self::getArg("bidColor", AT_int);
+    $this->game->selectBid($bid_type, $bid_color);
     self::ajaxResponse();
   }
 
