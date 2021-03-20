@@ -224,7 +224,8 @@ define([
           card.color == "2" &&
           this.playerHand.items.find(function (item) {
             return item.type > 25 || item.type < 13;
-          })
+          }) &&
+          !this.firstCardPlayed 
         ) {
           return false;
         }

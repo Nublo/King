@@ -375,7 +375,7 @@ class King extends Table {
                 array('player_id' => $best_value_player_id)
             );
 
-            if ($this->cards->countCardInLocation('hand') == 0) {
+            if ($this->cards->countCardInLocation('hand') == 0 || $this->fastEndCheck()) {
                 $this->gamestate->nextState("endHand");
             } else {
                 $this->gamestate->nextState("nextTrick");
@@ -385,6 +385,49 @@ class King extends Table {
             self::giveExtraTime($player_id);
             $this->gamestate->nextState('nextPlayer');
         }
+    }
+
+    function fastEndCheck() {
+        $cards = $this->cards->getCardsInLocation("cardswon");
+        $bid_type = self::getGameStateValue("bidType");
+
+        if ($bid_type == 0) {
+            foreach ($cards as $card) {
+                $player_id = $card['location_arg'];
+                if ($card['type'] == 2 && $card['type_arg'] == 13) {
+                    return true;
+                }
+            }
+        } else if ($bid_type == 1) {
+            $countQueens = 0;
+            if ($card['type_arg'] == 12) {
+                $countQueens++;
+            }
+            if ($countQueens == 4) {
+                return true;
+            }
+        } else if ($bid_type == 2) {
+            $countJacks = 0;
+            if ($card['type_arg'] == 11) {
+                $countJacks++;
+            }
+            if ($countJacks == 4) {
+                return true;
+            }
+        } else if ($bid_type == 4) {
+            $countHearts = 0;
+            foreach ($cards as $card) {
+                $player_id = $card['location_arg'];
+                if ($card['type'] == 2) {
+                    $countHearts++;
+                }
+            }
+            if ($countHearts == 8) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     function stEndHand() {
