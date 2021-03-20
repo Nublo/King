@@ -128,7 +128,7 @@ class King extends Table {
 
     function bidToLongReadable($bid_type, $color) {
         if (!isset($bid_type)) {
-            return "Plus. Trump is " . $this->colors[$color + 1]['emoji'];
+            return "Plus. Trump is " . $this->colors[$color]['emoji'];
         }
         return $this->bids_long_label[$bid_type];
     }
@@ -138,7 +138,7 @@ class King extends Table {
     }
 
     function isPlus() {
-        return self::getGameStateValue("bidColor") != -1;
+        return self::getGameStateValue("bidColor") > 0 && self::getGameStateValue("bidColor") < 5;
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -327,7 +327,7 @@ class King extends Table {
             $best_value_player_id = null;
             $baseColor = self::getGameStateValue("firstCardPlayed");
             self::debug("stNextPlayer_debug:" . self::getGameStateValue("bidColor") . ";");
-            $currentHandTrump = self::getGameStateValue("bidColor") + 1; // TODO reconsider that +1
+            $currentHandTrump = self::getGameStateValue("bidColor");
             $hasTrumpInHand = false;
             foreach ($cards_on_table as $card) {
                 if ($card['type'] == $currentHandTrump && $this->isPlus()) {

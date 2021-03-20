@@ -230,12 +230,12 @@ define([
         }
       }
 
-      if (+this.currentBidColor > -1 && +this.currentBidColor < 4) {
+      if (+this.currentBidColor > 0 && +this.currentBidColor < 5) {
         if (
           this.firstCardPlayed &&
           this.firstCardPlayed != card.color &&
-          card.color != +this.currentBidColor + 1 &&
-          this.hasColorInHand(this.playerHand.items, +this.currentBidColor + 1)
+          card.color != +this.currentBidColor &&
+          this.hasColorInHand(this.playerHand.items, +this.currentBidColor)
         ) {
           return false;
         }
@@ -313,19 +313,19 @@ define([
     },
 
     onPlusSpadesSelected: function () {
-      this.selectPlus(0);
-    },
-
-    onPlusHeartsSelected: function () {
       this.selectPlus(1);
     },
 
-    onPlusClubsSelected: function () {
+    onPlusHeartsSelected: function () {
       this.selectPlus(2);
     },
 
-    onPlusDiamondsSelected: function () {
+    onPlusClubsSelected: function () {
       this.selectPlus(3);
+    },
+
+    onPlusDiamondsSelected: function () {
+      this.selectPlus(4);
     },
 
     selectBid: function (bidType) {
@@ -388,6 +388,7 @@ define([
     },
 
     notif_selectedBid: function (notif) {
+      console.log("selectedBid - ", notif.args);
       this.currentBidColor = +notif.args.bid_color;
 
       if (notif.args.bid_type == null) {
