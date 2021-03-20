@@ -14,7 +14,7 @@ class King extends Table {
                 "lastTwoFirstId" => 14,
                 "lastTwoSecondId" => 15,
                 "bid_player" => 16,
-								"isHeartsPlayed" => 17,
+				"isHeartsPlayed" => 17,
             )
         );
 
@@ -53,7 +53,7 @@ class King extends Table {
         self::setGameStateValue("bidColor", -1);
         self::setGameStateValue("lastTwoFirstId", -1);
         self::setGameStateValue("lastTwoSecondId", -1);
-				self::setGameStateValue("isHeartsPlayed", 0);
+		self::setGameStateValue("isHeartsPlayed", 0);
     }
 
     function setupCards() {
@@ -100,10 +100,10 @@ class King extends Table {
 
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
         $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
-				$result['bidType'] = self::getGameStateValue('bidType');
-				$result['bidColor'] = self::getGameStateValue('bidColor');
-				$result['isHeartsPlayed'] = self::getGameStateValue('isHeartsPlayed');
-				$result['firstCardPlayed'] = self::getGameStateValue('firstCardPlayed');
+		$result['bidType'] = self::getGameStateValue('bidType');
+		$result['bidColor'] = self::getGameStateValue('bidColor');
+		$result['isHeartsPlayed'] = self::getGameStateValue('isHeartsPlayed');
+		$result['firstCardPlayed'] = self::getGameStateValue('firstCardPlayed');
 
         return $result;
     }
@@ -234,18 +234,18 @@ class King extends Table {
         $player_id = self::getActivePlayerId();
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         // XXX check rules here
-				$currentHand = $this->cards->getCardsInLocation('hand', $player_id);
+		$currentHand = $this->cards->getCardsInLocation('hand', $player_id);
         $currentCard = $this->cards->getCard($card_id);
         $firstCardPlayed = self::getGameStateValue("firstCardPlayed");
 
         if ($firstCardPlayed == 0) {
-						$firstCardPlayed = $currentCard['type'];
+			$firstCardPlayed = $currentCard['type'];
             self::setGameStateValue("firstCardPlayed", $currentCard['type']);
         }
 
-				if ($currentCard['type'] == 2) {
-					self::setGameStateValue("isHeartsPlayed", 1);
-				}
+		if ($currentCard['type'] == 2) {
+			self::setGameStateValue("isHeartsPlayed", 1);
+		}
 
         self::notifyAllPlayers(
             'playCard',
@@ -299,7 +299,7 @@ class King extends Table {
         self::setGameStateValue("bidType", -1);
         self::setGameStateValue("bidColor", -1);
         self::setGameStateValue("bid_player", self::getActivePlayerId());
-				self::setGameStateValue("isHeartsPlayed", 0);
+		self::setGameStateValue("isHeartsPlayed", 0);
 
         $this->gamestate->nextState("");
     }
