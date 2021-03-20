@@ -8,25 +8,26 @@ class King extends Table {
         self::initGameStateLabels(
             array(
                 "currentRound" => 10, // number, in total 27 rounds in the game
-                "trick" => 11,
+                "firstCardPlayed" => 11,
                 "bidType" => 12, // 0-5 games, 6-8 +
                 "bidColor" => 13, // plus bid, trump value
                 "lastTwoFirstId" => 14,
                 "lastTwoSecondId" => 15,
-                "bid_player" => 16
+                "bid_player" => 16,
+								"isHeartsPlayed" => 17,
             )
         );
 
         $this->cards = self::getNew("module.common.deck");
         $this->cards->init("card");
 	}
-	
+
     protected function getGameName() { return "king"; }
 
     protected function setupNewGame($players, $options = array()) {
         $gameinfos = self::getGameinfos();
         $default_colors = $gameinfos['player_colors'];
- 
+
         $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
         $values = array();
         foreach($players as $player_id => $player) {
@@ -37,7 +38,7 @@ class King extends Table {
         self::DbQuery($sql);
         self::reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         self::reloadPlayersBasicInfos();
-        
+
         $this->setupGlobalValues();
         $this->setupCards();
         $this->setupPossibleBids($players);
@@ -47,11 +48,12 @@ class King extends Table {
 
     function setupGlobalValues() {
         self::setGameStateValue("currentRound", 0);
-        self::setGameStateValue("trick", 0);
+        self::setGameStateValue("firstCardPlayed", 0);
         self::setGameStateValue("bidType", -1);
         self::setGameStateValue("bidColor", -1);
         self::setGameStateValue("lastTwoFirstId", -1);
         self::setGameStateValue("lastTwoSecondId", -1);
+				self::setGameStateValue("isHeartsPlayed", 0);
     }
 
     function setupCards() {
@@ -92,13 +94,17 @@ class King extends Table {
     protected function getAllDatas() {
         $result = array();
         $current_player_id = self::getCurrentPlayerId();
-    
+
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb($sql);
 
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
         $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
-  
+				$result['bidType'] = self::getGameStateValue('bidType');
+				$result['bidColor'] = self::getGameStateValue('bidColor');
+				$result['isHeartsPlayed'] = self::getGameStateValue('isHeartsPlayed');
+				$result['firstCardPlayed'] = self::getGameStateValue('firstCardPlayed');
+
         return $result;
     }
 
@@ -175,7 +181,7 @@ class King extends Table {
                 'player_name' => self::getActivePlayerName(),
                 'bid_value' => $this->bidToLongReadable($bid_type, $bid_color),
                 'bid_type' => $bid_type,
-                'color' => $bid_color
+                'bid_color' => $bid_color
             )
         );
 
@@ -183,8 +189,8 @@ class King extends Table {
         $first_card = array_shift($buyIn);
         $second_card = array_shift($buyIn);
         self::notifyAllPlayers(
-            'openBuyin', 
-            clienttranslate('Buyin: ${first_card} ${second_card}'), 
+            'openBuyin',
+            clienttranslate('Buyin: ${first_card} ${second_card}'),
             array(
                 'player_id' => $player_id,
                 'first_card' => $this->cardToString($first_card),
@@ -228,16 +234,22 @@ class King extends Table {
         $player_id = self::getActivePlayerId();
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         // XXX check rules here
+				$currentHand = $this->cards->getCardsInLocation('hand', $player_id);
         $currentCard = $this->cards->getCard($card_id);
+        $firstCardPlayed = self::getGameStateValue("firstCardPlayed");
 
-        $currentTrickColor = self::getGameStateValue("trick");
-        if ($currentTrickColor == 0) {
-            self::setGameStateValue("trick", $currentCard['type']);
+        if ($firstCardPlayed == 0) {
+						$firstCardPlayed = $currentCard['type'];
+            self::setGameStateValue("firstCardPlayed", $currentCard['type']);
         }
 
+				if ($currentCard['type'] == 2) {
+					self::setGameStateValue("isHeartsPlayed", 1);
+				}
+
         self::notifyAllPlayers(
-            'playCard', 
-            clienttranslate('${player_name} plays ${value_displayed}'), 
+            'playCard',
+            clienttranslate('${player_name} plays ${value_displayed}'),
             array(
                 'i18n' => array('color_displayed', 'value_displayed'),
                 'card_id' => $card_id,
@@ -245,12 +257,13 @@ class King extends Table {
                 'player_name' => self::getActivePlayerName(),
                 'value' => $currentCard['type_arg'],
                 'value_displayed' => $this->cardToString($currentCard),
-                'color' => $currentCard['type']
+                'color' => $currentCard['type'],
+								'first_card_played' => $firstCardPlayed
             )
         );
         $this->gamestate->nextState('playCard');
     }
-    
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state arguments
 ////////////
@@ -282,10 +295,11 @@ class King extends Table {
         }
 
         self::setGameStateValue("currentRound", $this->getGameStateValue("currentRound") + 1);
-        self::setGameStateValue("trick", 0);
+        self::setGameStateValue("firstCardPlayed", 0);
         self::setGameStateValue("bidType", -1);
         self::setGameStateValue("bidColor", -1);
         self::setGameStateValue("bid_player", self::getActivePlayerId());
+				self::setGameStateValue("isHeartsPlayed", 0);
 
         $this->gamestate->nextState("");
     }
@@ -302,7 +316,7 @@ class King extends Table {
     }
 
     function stNewTrick() {
-        self::setGameStateInitialValue("trick", 0);
+        self::setGameStateInitialValue("firstCardPlayed", 0);
         $this->gamestate->nextState();
     }
 
@@ -311,7 +325,7 @@ class King extends Table {
             $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
             $best_value = 0;
             $best_value_player_id = null;
-            $baseColor = self::getGameStateValue("trick");
+            $baseColor = self::getGameStateValue("firstCardPlayed");
             self::debug("stNextPlayer_debug:" . self::getGameStateValue("bidColor") . ";");
             $currentHandTrump = self::getGameStateValue("bidColor") + 1; // TODO reconsider that +1
             $hasTrumpInHand = false;
@@ -334,7 +348,7 @@ class King extends Table {
                     }
                 }
             }
-            
+
             $this->gamestate->changeActivePlayer($best_value_player_id);
             $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
 
@@ -348,19 +362,19 @@ class King extends Table {
 
             $players = self::loadPlayersBasicInfos();
             self::notifyAllPlayers(
-                'trickWin', 
-                clienttranslate('${player_name} wins the hand'), 
+                'trickWin',
+                clienttranslate('${player_name} wins the hand'),
                 array(
                     'player_id' => $best_value_player_id,
                     'player_name' => $players[$best_value_player_id]['player_name']
                 )
-            );            
+            );
             self::notifyAllPlayers(
                 'giveAllCardsToPlayer',
                 '',
                 array('player_id' => $best_value_player_id)
             );
-        
+
             if ($this->cards->countCardInLocation('hand') == 0) {
                 $this->gamestate->nextState("endHand");
             } else {
@@ -406,8 +420,8 @@ class King extends Table {
                 self::DbQuery($sql);
                 $points = $player_to_points[$player_id];
                 self::notifyAllPlayers(
-                    "points", 
-                    clienttranslate('${player_name} gets ${nbr} points'), 
+                    "points",
+                    clienttranslate('${player_name} gets ${nbr} points'),
                     array(
                         'player_id' => $player_id,
                         'player_name' => $players[$player_id]['player_name'],
@@ -416,8 +430,8 @@ class King extends Table {
                 );
             } else {
                 self::notifyAllPlayers(
-                    "points", 
-                    clienttranslate('${player_name} gets 0 points'), 
+                    "points",
+                    clienttranslate('${player_name} gets 0 points'),
                     array(
                         'player_id' => $player_id,
                         'player_name' => $players[$player_id]['player_name']
@@ -522,7 +536,7 @@ class King extends Table {
 
     function zombieTurn($state, $active_player) {
     	$statename = $state['name'];
-    	
+
         if ($state['type'] === "activeplayer") {
             switch ($statename) {
                 default:
@@ -536,12 +550,12 @@ class King extends Table {
         if ($state['type'] === "multipleactiveplayer") {
             // Make sure player is in a non blocking status for role turn
             $this->gamestate->setPlayerNonMultiactive( $active_player, '' );
-            
+
             return;
         }
 
         throw new feException( "Zombie mode not supported at this game state: ".$statename );
     }
-    
+
     function upgradeTableDb($from_version) {}
 }

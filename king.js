@@ -1,283 +1,449 @@
 define([
-    "dojo","dojo/_base/declare",
-    "ebg/core/gamegui",
-    "ebg/counter",
-    "ebg/stock"
-],
-function (dojo, declare) {
-    return declare("bgagame.king", ebg.core.gamegui, {
-        constructor: function() {
-            this.cardwidth = 72;
-            this.cardheight = 96;
-        },
-        
-        setup: function(gamedatas) {
-            for (var player_id in gamedatas.players) {
-                var player = gamedatas.players[player_id];
+  "dojo",
+  "dojo/_base/declare",
+  "ebg/core/gamegui",
+  "ebg/counter",
+  "ebg/stock",
+], function (dojo, declare) {
+  return declare("bgagame.king", ebg.core.gamegui, {
+    constructor: function () {
+      this.cardwidth = 72;
+      this.cardheight = 96;
+      this.currentBidType = -1;
+      this.currentBidColor = -1;
+      this.isHeartsPlayed = 0;
+      this.firstCardPlayed = 0;
+    },
+
+    setup: function (gamedatas) {
+      console.log(gamedatas, "gamedatas");
+      for (var player_id in gamedatas.players) {
+        var player = gamedatas.players[player_id];
+      }
+
+      this.currentBidType = gamedatas.bidType;
+      this.currentBidColor = gamedatas.bidColor;
+      this.isHeartsPlayed = +gamedatas.isHeartsPlayed;
+      this.firstCardPlayed = +gamedatas.firstCardPlayed;
+
+      this.playerHand = new ebg.stock();
+      this.playerHand.create(
+        this,
+        $("myhand"),
+        this.cardwidth,
+        this.cardheight
+      );
+      this.playerHand.image_items_per_row = 13;
+
+      for (var color = 1; color <= 4; color++) {
+        for (var value = 7; value <= 14; value++) {
+          var card_type_id = this.getCardUniqueId(color, value);
+          this.playerHand.addItemType(
+            card_type_id,
+            card_type_id,
+            g_gamethemeurl + "img/cards.jpg",
+            card_type_id
+          );
+        }
+      }
+
+      this.setupCardsInHand(this.gamedatas);
+      this.setupNotifications();
+
+      dojo.connect(
+        this.playerHand,
+        "onChangeSelection",
+        this,
+        "onPlayerHandSelectionChanged"
+      );
+    },
+
+    setupCardsInHand: function (gamedatas) {
+      for (var i in gamedatas.hand) {
+        var card = gamedatas.hand[i];
+        this.addCardToHand(card);
+      }
+
+      for (i in gamedatas.cardsontable) {
+        var card = gamedatas.cardsontable[i];
+        var color = card.type;
+        var value = card.type_arg;
+        var player_id = card.location_arg;
+        this.playCardOnTable(player_id, color, value, card.id);
+      }
+    },
+
+    onEnteringState: function (stateName, args) {
+      console.log("Entering state: " + stateName);
+
+      switch (stateName) {
+      }
+    },
+
+    onLeavingState: function (stateName) {
+      console.log("Leaving state: " + stateName);
+
+      switch (stateName) {
+      }
+    },
+
+    onUpdateActionButtons: function (stateName, args) {
+      console.log("onUpdateActionButtons: ", stateName, args);
+
+      if (this.isCurrentPlayerActive()) {
+        switch (stateName) {
+          case "newBid":
+            if (args.includes("0")) {
+              this.addActionButton("bid_king", _("K"), "onKingSelected");
             }
-            
-            this.playerHand = new ebg.stock();
-            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
-            this.playerHand.image_items_per_row = 13;
-
-            for (var color = 1; color <= 4; color++) {
-                for (var value = 7; value <= 14; value++) {
-                    var card_type_id = this.getCardUniqueId(color, value);
-                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
-                }
+            if (args.includes("1")) {
+              this.addActionButton("bid_queens", _("Q"), "onQueensSelected");
             }
-
-            this.setupCardsInHand(this.gamedatas);
-            this.setupNotifications();
-
-            dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
-        },
-
-        setupCardsInHand: function(gamedatas) {
-            for (var i in gamedatas.hand) {
-                var card = gamedatas.hand[i];
-                this.addCardToHand(card);
+            if (args.includes("2")) {
+              this.addActionButton("bid_jacks", _("J"), "onJacksSelected");
             }
-
-            for (i in gamedatas.cardsontable) {
-                var card = gamedatas.cardsontable[i];
-                var color = card.type;
-                var value = card.type_arg;
-                var player_id = card.location_arg;
-                this.playCardOnTable(player_id, color, value, card.id);
+            if (args.includes("3")) {
+              this.addActionButton("bid_last", _("L"), "onLast2Selected");
             }
-        },
-       
-        onEnteringState: function(stateName, args) {
-            console.log('Entering state: ' + stateName);
-            
-            switch(stateName) { 
+            if (args.includes("4")) {
+              this.addActionButton("bid_hearts", _("H"), "onHeartsSelected");
             }
-        },
-
-        onLeavingState: function(stateName) {
-            console.log('Leaving state: ' + stateName);
-            
-            switch(stateName) {
-            }            
-        }, 
-
-        onUpdateActionButtons: function(stateName, args) {
-            console.log('onUpdateActionButtons: ' + stateName + args);
-                      
-            if (this.isCurrentPlayerActive()) {            
-                switch(stateName) {
-                    case 'newBid':
-                    if (args.includes("0")) {
-                        this.addActionButton('bid_king', _('K'), 'onKingSelected');
-                    }
-                    if (args.includes("1")) {
-                        this.addActionButton('bid_queens', _('Q'), 'onQueensSelected');
-                    }
-                    if (args.includes("2")) {
-                        this.addActionButton('bid_jacks', _('J'), 'onJacksSelected');
-                    }
-                    if (args.includes("3")) {
-                        this.addActionButton('bid_last', _('L'), 'onLast2Selected');
-                    }
-                    if (args.includes("4")) {
-                        this.addActionButton('bid_hearts', _('H'), 'onHeartsSelected');
-                    }
-                    if (args.includes("5")) {
-                        this.addActionButton('bid_nothing', _('N'), 'onNothingSelected');
-                    }
-                    if (args.includes("6") || args.includes("7") || args.includes("8")) {
-                        this.addActionButton('bid_plus_spades', _('♠️'), 'onPlusSpadesSelected');
-                        this.addActionButton('bid_plus_hearts', _('♥️️'), 'onPlusHeartsSelected');
-                        this.addActionButton('bid_plus_clubs', _('♣️'), 'onPlusClubsSelected');
-                        this.addActionButton('bid_plus_diamonds', _('♦️'), 'onPlusDiamondsSelected');
-                    }
-                    break;
-                }
+            if (args.includes("5")) {
+              this.addActionButton("bid_nothing", _("N"), "onNothingSelected");
             }
-        },
-
-        // ["spades", "hearts", "clubs", "diamonds"]
-        getCardUniqueId : function(color, value) {
-            return (color - 1) * 13 + (value - 2);
-        },
-
-        addCardToHand : function(card) {
-            var color = card.type;
-            var value = card.type_arg;
-            this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
-        },
-
-        playCardOnTable : function(player_id, color, value, card_id) {
-            dojo.place(this.format_block('jstpl_cardontable', {
-                x : this.cardwidth * (value - 2),
-                y : this.cardheight * (color - 1),
-                player_id : player_id
-            }), 'playertablecard_' + player_id);
-
-            if (player_id != this.player_id) {
-                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
-            } else {
-                if ($('myhand_item_' + card_id)) {
-                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
-                    this.playerHand.removeFromStockById(card_id);
-                }
+            if (
+              args.includes("6") ||
+              args.includes("7") ||
+              args.includes("8")
+            ) {
+              this.addActionButton(
+                "bid_plus_spades",
+                _("♠️"),
+                "onPlusSpadesSelected"
+              );
+              this.addActionButton(
+                "bid_plus_hearts",
+                _("♥️️"),
+                "onPlusHeartsSelected"
+              );
+              this.addActionButton(
+                "bid_plus_clubs",
+                _("♣️"),
+                "onPlusClubsSelected"
+              );
+              this.addActionButton(
+                "bid_plus_diamonds",
+                _("♦️"),
+                "onPlusDiamondsSelected"
+              );
             }
+            break;
+        }
+      }
+    },
 
-            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
-        },
+    // ["spades", "hearts", "clubs", "diamonds"]
+    getCardUniqueId: function (color, value) {
+      return (color - 1) * 13 + (value - 2);
+    },
 
+    getCardFromType: function (id) {
+      return { color: Math.floor(id / 13) + 1, value: (id % 13) + 2 };
+    },
 
-        ///////////////////////////////////////////////////
-        //// Player's action
+    addCardToHand: function (card) {
+      var color = card.type;
+      var value = card.type_arg;
+      this.playerHand.addToStockWithId(
+        this.getCardUniqueId(color, value),
+        card.id
+      );
+    },
 
-        onPlayerHandSelectionChanged : function() {
-            var items = this.playerHand.getSelectedItems();
+    playCardOnTable: function (player_id, color, value, card_id) {
+      dojo.place(
+        this.format_block("jstpl_cardontable", {
+          x: this.cardwidth * (value - 2),
+          y: this.cardheight * (color - 1),
+          player_id: player_id,
+        }),
+        "playertablecard_" + player_id
+      );
 
-            if (items.length > 0) {
-                if (this.checkAction('playCard', true)) {
-                    var card_id = items[0].id;                  
-                    this.ajaxcall(
-                        "/" + this.game_name + "/" + this.game_name + "/playCard.html", 
-                        {id : card_id, lock : true},
-                        this, 
-                        function(result) {},
-                        function(is_error) {}
-                    );
-                    this.playerHand.unselectAll();
-                } else if (this.checkAction('discard', true)) {
-                    if (items.length == 2) {
-                        this.ajaxcall(
-                            "/" + this.game_name + "/" + this.game_name + "/discard.html", 
-                            {id1 : items[0].id, id2 : items[1].id, lock : true},
-                            this,
-                            function(result) {}, 
-                            function(is_error) {}
-                        );
-                        this.playerHand.unselectAll();
-                    }
-                } else {
-                    this.playerHand.unselectAll();
-                }
-            }
-        },
+      if (player_id != this.player_id) {
+        this.placeOnObject(
+          "cardontable_" + player_id,
+          "overall_player_board_" + player_id
+        );
+      } else {
+        if ($("myhand_item_" + card_id)) {
+          this.placeOnObject(
+            "cardontable_" + player_id,
+            "myhand_item_" + card_id
+          );
+          this.playerHand.removeFromStockById(card_id);
+        }
+      }
 
-        // Bid selection
-        onKingSelected : function() { this.selectBid(0); },
+      this.slideToObject(
+        "cardontable_" + player_id,
+        "playertablecard_" + player_id
+      ).play();
+    },
 
-        onQueensSelected : function() { this.selectBid(1); },
+    ///////////////////////////////////////////////////
+    //// Player's action
 
-        onJacksSelected : function() { this.selectBid(2); },
+    hasColorInHand: function (hand, color) {
+      const getCardFromType = this.getCardFromType;
 
-        onLast2Selected : function() { this.selectBid(3); },
+      return !!hand.find(function (item) {
+        return getCardFromType(item.type).color == color;
+      });
+    },
 
-        onHeartsSelected : function() { this.selectBid(4); },
+    isActionValid: function (card) {
+      console.log(
+        card,
+        "card",
+        this.playerHand.items,
+        "playersHand",
+        this.currentBidType,
+        "bid",
+        this.currentBidColor,
+        "bid_color",
+        this.isHeartsPlayed,
+        "isHeartsPlayed",
+        this.firstCardPlayed,
+        "firstCardPlayed"
+      );
 
-        onNothingSelected : function() { this.selectBid(5); },
+      if (+this.currentBidType == 0 || +this.currentBidType == 4) {
+        if (
+          !this.isHeartsPlayed &&
+          card.color == "2" &&
+          this.playerHand.items.find(function (item) {
+            return item.type > 25 || item.type < 13;
+          })
+        ) {
+          return false;
+        }
+      }
 
-        onPlusSpadesSelected : function() { this.selectPlus(0); },
+      if (+this.currentBidColor > -1 && +this.currentBidColor < 4) {
+        if (
+          this.firstCardPlayed &&
+          this.firstCardPlayed != card.color &&
+          card.color != +this.currentBidColor + 1 &&
+          this.hasColorInHand(this.playerHand.items, +this.currentBidColor + 1)
+        ) {
+          return false;
+        }
+      }
 
-        onPlusHeartsSelected : function() { this.selectPlus(1); },
+      if (
+        this.firstCardPlayed &&
+        this.firstCardPlayed != card.color &&
+        this.hasColorInHand(this.playerHand.items, this.firstCardPlayed)
+      ) {
+        return false;
+      }
 
-        onPlusClubsSelected : function() { this.selectPlus(2); },
+      return true;
+    },
 
-        onPlusDiamondsSelected : function() { this.selectPlus(3); },
+    onPlayerHandSelectionChanged: function () {
+      var items = this.playerHand.getSelectedItems();
 
-        selectBid : function(bidType) {
-            console.log("bidType - " + bidType + ";");
+      if (items.length) {
+        if (
+          this.checkAction("playCard", true) &&
+          this.isActionValid(this.getCardFromType(items[0].type))
+        ) {
+          var card_id = items[0].id;
+          this.ajaxcall(
+            "/" + this.game_name + "/" + this.game_name + "/playCard.html",
+            { id: card_id, lock: true },
+            this,
+            function (result) {},
+            function (is_error) {}
+          );
+          this.playerHand.unselectAll();
+        } else if (this.checkAction("discard", true)) {
+          if (items.length == 2) {
             this.ajaxcall(
-                "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
-                {bidId : bidType, lock : true},
-                this, 
-                function(result) {}, 
-                function(is_error) {}
+              "/" + this.game_name + "/" + this.game_name + "/discard.html",
+              { id1: items[0].id, id2: items[1].id, lock: true },
+              this,
+              function (result) {},
+              function (is_error) {}
             );
-        },
+            this.playerHand.unselectAll();
+          }
+        } else {
+          this.playerHand.unselectAll();
+        }
+      }
+    },
 
-        selectPlus : function(cardColor) {
-            console.log("color - " + cardColor + ";");
-            this.ajaxcall(
-                "/" + this.game_name + "/" + this.game_name + "/selectBid.html", 
-                {bidColor : cardColor, lock : true},
-                this, 
-                function(result) {}, 
-                function(is_error) {}
-            );
-        },
-        
-        ///////////////////////////////////////////////////
-        //// Reaction to cometD notifications
+    // Bid selection
+    onKingSelected: function () {
+      // console.log(event.target.id, "id");
+      this.selectBid(0);
+    },
 
-        setupNotifications: function() {
-            dojo.subscribe('newHand', this, "notif_newHand");
+    onQueensSelected: function () {
+      this.selectBid(1);
+    },
 
-            dojo.subscribe('openBuyin', this, "notif_openBuyin");
-            // this.notifqueue.setSynchronous('openBuyin', 3000);
-            dojo.subscribe('giveBuyinToPlayer', this, "notif_giveBuyinToPlayer");
+    onJacksSelected: function () {
+      this.selectBid(2);
+    },
 
-            dojo.subscribe('discard', this, "notif_discard");
+    onLast2Selected: function () {
+      this.selectBid(3);
+    },
 
-            dojo.subscribe('playCard', this, "notif_playCard");
-            dojo.subscribe('trickWin', this, "notif_trickWin");
-            this.notifqueue.setSynchronous('trickWin', 1000);
-            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
-            dojo.subscribe('newScores', this, "notif_newScores");
-        },
+    onHeartsSelected: function () {
+      this.selectBid(4);
+    },
 
-        notif_newHand : function(notif) {
-            this.playerHand.removeAll();
+    onNothingSelected: function () {
+      this.selectBid(5);
+    },
 
-            for (var i in notif.args.cards) {
-                var card = notif.args.cards[i];
-                this.addCardToHand(card);
-            }
-        },
+    onPlusSpadesSelected: function () {
+      this.selectPlus(0);
+    },
 
-        notif_openBuyin : function(notif) {
-            // TODO open cards and present them on table
-        },
+    onPlusHeartsSelected: function () {
+      this.selectPlus(1);
+    },
 
-        notif_giveBuyinToPlayer : function(notif) {
-            this.addCardToHand(notif.args.first_card);
-            this.addCardToHand(notif.args.second_card);
-        },
+    onPlusClubsSelected: function () {
+      this.selectPlus(2);
+    },
 
-        notif_discard : function(notif) {
-            this.playerHand.removeFromStockById(notif.args.first_card_id);
-            this.playerHand.removeFromStockById(notif.args.second_card_id);
-        },
+    onPlusDiamondsSelected: function () {
+      this.selectPlus(3);
+    },
 
-        notif_playCard : function(notif) {
-            this.playCardOnTable(
-                notif.args.player_id, 
-                notif.args.color,
-                notif.args.value,
-                notif.args.card_id
-            );
-        },
+    selectBid: function (bidType) {
+      console.log("bidType - " + bidType + ";");
+      this.ajaxcall(
+        "/" + this.game_name + "/" + this.game_name + "/selectBid.html",
+        { bidId: bidType, lock: true },
+        this,
+        function (result) {},
+        function (is_error) {}
+      );
+    },
 
-        notif_trickWin : function(notif) {},
+    selectPlus: function (cardColor) {
+      console.log("color - " + cardColor + ";");
+      this.ajaxcall(
+        "/" + this.game_name + "/" + this.game_name + "/selectBid.html",
+        { bidColor: cardColor, lock: true },
+        this,
+        function (result) {},
+        function (is_error) {}
+      );
+    },
 
-        notif_giveAllCardsToPlayer : function(notif) {
-            var winner_id = notif.args.player_id;
-            for (var player_id in this.gamedatas.players) {
-                var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
-                dojo.connect(
-                    anim,
-                    'onEnd',
-                    function(node) {
-                        dojo.destroy(node);
-                    }
-                );
-                anim.play();
-            }
-        },
+    ///////////////////////////////////////////////////
+    //// Reaction to cometD notifications
 
-        notif_newScores : function(notif) {
-           for (var player_id in notif.args.newScores) {
-               this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
-           }
-       },
-        
-   });
+    setupNotifications: function () {
+      dojo.subscribe("newHand", this, "notif_newHand");
+      dojo.subscribe("selectedBid", this, "notif_selectedBid");
+
+      dojo.subscribe("openBuyin", this, "notif_openBuyin");
+      // this.notifqueue.setSynchronous('openBuyin', 3000);
+      dojo.subscribe("giveBuyinToPlayer", this, "notif_giveBuyinToPlayer");
+
+      dojo.subscribe("discard", this, "notif_discard");
+
+      dojo.subscribe("playCard", this, "notif_playCard");
+      dojo.subscribe("trickWin", this, "notif_trickWin");
+      this.notifqueue.setSynchronous("trickWin", 1000);
+      dojo.subscribe(
+        "giveAllCardsToPlayer",
+        this,
+        "notif_giveAllCardsToPlayer"
+      );
+      dojo.subscribe("newScores", this, "notif_newScores");
+    },
+
+    notif_newHand: function (notif) {
+      this.playerHand.removeAll();
+
+      for (var i in notif.args.cards) {
+        var card = notif.args.cards[i];
+        this.addCardToHand(card);
+      }
+    },
+
+    notif_openBuyin: function (notif) {
+      // TODO open cards and present them on table
+    },
+
+    notif_selectedBid: function (notif) {
+      this.currentBidColor = +notif.args.bid_color;
+
+      if (notif.args.bid_type == null) {
+        this.currentBidType = -1;
+      } else {
+        this.currentBidType = +notif.args.bid_type;
+      }
+    },
+
+    notif_giveBuyinToPlayer: function (notif) {
+      this.addCardToHand(notif.args.first_card);
+      this.addCardToHand(notif.args.second_card);
+    },
+
+    notif_discard: function (notif) {
+      this.playerHand.removeFromStockById(notif.args.first_card_id);
+      this.playerHand.removeFromStockById(notif.args.second_card_id);
+    },
+
+    notif_playCard: function (notif) {
+      console.log(notif.args.first_card_played, "card played");
+      this.firstCardPlayed = +notif.args.first_card_played;
+      if (notif.args.color == 2) {
+        this.isHeartsPlayed = 1;
+      }
+
+      this.playCardOnTable(
+        notif.args.player_id,
+        notif.args.color,
+        notif.args.value,
+        notif.args.card_id
+      );
+    },
+
+    notif_trickWin: function (notif) {
+      this.firstCardPlayed = 0;
+    },
+
+    notif_giveAllCardsToPlayer: function (notif) {
+      var winner_id = notif.args.player_id;
+      for (var player_id in this.gamedatas.players) {
+        var anim = this.slideToObject(
+          "cardontable_" + player_id,
+          "overall_player_board_" + winner_id
+        );
+        dojo.connect(anim, "onEnd", function (node) {
+          dojo.destroy(node);
+        });
+        anim.play();
+      }
+    },
+
+    notif_newScores: function (notif) {
+      for (var player_id in notif.args.newScores) {
+        this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
+      }
+    },
+  });
 });
