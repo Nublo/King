@@ -400,16 +400,20 @@ class King extends Table {
             }
         } else if ($bid_type == 1) {
             $countQueens = 0;
-            if ($card['type_arg'] == 12) {
-                $countQueens++;
+            foreach ($cards as $card) {
+                if ($card['type_arg'] == 12) {
+                    $countQueens++;
+                }
             }
             if ($countQueens == 4) {
                 return true;
             }
         } else if ($bid_type == 2) {
             $countJacks = 0;
-            if ($card['type_arg'] == 11) {
-                $countJacks++;
+            foreach ($cards as $card) {
+                if ($card['type_arg'] == 11) {
+                    $countJacks++;
+                }
             }
             if ($countJacks == 4) {
                 return true;
