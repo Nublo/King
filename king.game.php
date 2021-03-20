@@ -126,9 +126,13 @@ class King extends Table {
         return $result;
     }
 
-    function bidToLongReadable($bid_type, $color) {
+    function bidToLongReadable($bid_type, $bid_color) {
         if (!isset($bid_type)) {
-            return "Plus. Trump is " . $this->colors[$color]['emoji'];
+            if (isset($bid_color)) {
+                return "Trump is " . $this->colors[$bid_color]['emoji'];
+            } else {
+                return "Plus";
+            }
         }
         return $this->bids_long_label[$bid_type];
     }
@@ -145,8 +149,8 @@ class King extends Table {
 //////////// Player actions
 ////////////
 
-    function selectBid($bid_type, $bid_color) {
-        self::debug("debugBid2: type=" . $bid_type . ";" . "color=" . $bid_color . ";");
+    function selectBid($bid_type) {
+        self::debug("debugBid2: type=" . $bid_type . ";");
         self::checkAction("selectBid");
         $player_id = self::getActivePlayerId();
 
@@ -160,30 +164,28 @@ class King extends Table {
             $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bid_type'";
             self::DbQuery($sql);
             self::setGameStateValue("bidType", $bid_type);
+
+            self::notifyAllPlayers(
+                'selectedBid',
+                clienttranslate('${player_name} selected to play ${bid_value}'),
+                array(
+                    'player_name' => self::getActivePlayerName(),
+                    'bid_value' => $this->bidToLongReadable($bid_type, null),
+                    'bid_type' => $bid_type,
+                    'bid_color' => $bid_color
+                )
+            );
         } else {
-            $sql = "SELECT bid_type FROM bid WHERE player_id = '$player_id' AND is_plus = 1 AND is_allowed = 1 LIMIT 1";
-            $result = self::DbQuery($sql);
-            if (mysqli_num_rows($result) == 0) {
-                throw new BgaUserException("All pluses where already used");
-            }
-            $bidToUpdate = mysql_fetch_assoc($result)['bid_type'];
-
-            $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bidToUpdate'";
-            self::DbQuery($sql);
-            self::setGameStateValue("bidColor", $bid_color);
+            self::notifyAllPlayers(
+                'selectedBid',
+                clienttranslate('${player_name} selected to play ${bid_value}'),
+                array(
+                    'player_name' => self::getActivePlayerName(),
+                    'bid_value' => $this->bidToLongReadable(null, null),
+                    'bid_type' => $bid_type
+                )
+            );
         }
-
-        // TODO probably we should notify users about the full bids state to update the UI
-        self::notifyAllPlayers(
-            'selectedBid',
-            clienttranslate('${player_name} selected to play ${bid_value}'),
-            array(
-                'player_name' => self::getActivePlayerName(),
-                'bid_value' => $this->bidToLongReadable($bid_type, $bid_color),
-                'bid_type' => $bid_type,
-                'bid_color' => $bid_color
-            )
-        );
 
         $buyIn = $this->cards->getCardsInLocation('deck');
         $first_card = array_shift($buyIn);
@@ -208,6 +210,36 @@ class King extends Table {
             )
         );
         $this->cards->pickCards(2, 'deck', $player_id);
+
+        if (isset($bid_type)) {
+            $this->gamestate->nextState("discard");
+        } else {
+            $this->gamestate->nextState("choosePlusColor");
+        }
+    }
+
+    function selectPlusColor($bid_color) {
+        $player_id = self::getActivePlayerId();
+        $sql = "SELECT bid_type FROM bid WHERE player_id = '$player_id' AND is_plus = 1 AND is_allowed = 1 LIMIT 1";
+        $result = self::DbQuery($sql);
+        if (mysqli_num_rows($result) == 0) {
+            throw new BgaUserException("All pluses where already used");
+        }
+        $bidToUpdate = mysql_fetch_assoc($result)['bid_type'];
+
+        $sql = "UPDATE bid SET is_allowed = 0 WHERE player_id = '$player_id' AND bid_type = '$bidToUpdate'";
+        self::DbQuery($sql);
+        self::setGameStateValue("bidColor", $bid_color);
+
+        self::notifyAllPlayers(
+            'selectedBid',
+            clienttranslate('${player_name} selected to play ${bid_value}'),
+            array(
+                'player_name' => self::getActivePlayerName(),
+                'bid_value' => $this->bidToLongReadable(null, $bid_color),
+                'bid_color' => $bid_color
+            )
+        );
 
         $this->gamestate->nextState("");
     }
@@ -309,6 +341,10 @@ class King extends Table {
         self::setGameStateValue("bidColor", -1);
         self::setGameStateValue("lastTwoFirstId", -1);
         self::setGameStateValue("lastTwoSecondId", -1);
+    }
+
+    function stNewPlusColor() {
+
     }
 
     function stDiscard() {

@@ -28,9 +28,18 @@ $machinestates = array(
         "action" => "stNewBid",
         "args" => "argChooseBid",
         "possibleactions" => array("selectBid"),
-        "transitions" => array("" => 22)
+        "transitions" => array("choosePlusColor" => 22, "discard" => 23)
     ),
     22 => array(
+        "name" => "choosePlusColor",
+        "description" => clienttranslate('${actplayer} must choose plus color'),
+        "descriptionmyturn" => clienttranslate('${you} must choose plus color'),
+        "type" => "activeplayer",
+        "action" => "stNewPlusColor",
+        "possibleactions" => array("choosePlus"),
+        "transitions" => array("" => 23)
+    ),
+    23 => array(
         "name" => "discard",
         "description" => clienttranslate('${actplayer} must discard 2 cards'),
         "descriptionmyturn" => clienttranslate('${you} must discard 2 cards'),

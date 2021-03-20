@@ -117,6 +117,14 @@ define([
               args.includes("8")
             ) {
               this.addActionButton(
+                "select_plus",
+                _("+"),
+                "onPlusSelected"
+              );
+            }
+            break;
+          case "choosePlusColor":
+            this.addActionButton(
                 "bid_plus_spades",
                 _("♠️"),
                 "onPlusSpadesSelected"
@@ -136,7 +144,6 @@ define([
                 _("♦️"),
                 "onPlusDiamondsSelected"
               );
-            }
             break;
         }
       }
@@ -313,20 +320,24 @@ define([
       this.selectBid(5);
     },
 
+    onPlusSelected: function() {
+      this.selectPlus();
+    },
+
     onPlusSpadesSelected: function () {
-      this.selectPlus(1);
+      this.choosePlus(1);
     },
 
     onPlusHeartsSelected: function () {
-      this.selectPlus(2);
+      this.choosePlus(2);
     },
 
     onPlusClubsSelected: function () {
-      this.selectPlus(3);
+      this.choosePlus(3);
     },
 
     onPlusDiamondsSelected: function () {
-      this.selectPlus(4);
+      this.choosePlus(4);
     },
 
     selectBid: function (bidType) {
@@ -340,10 +351,20 @@ define([
       );
     },
 
-    selectPlus: function (cardColor) {
-      console.log("color - " + cardColor + ";");
+    selectPlus: function () {
       this.ajaxcall(
         "/" + this.game_name + "/" + this.game_name + "/selectBid.html",
+        { lock: true },
+        this,
+        function (result) {},
+        function (is_error) {}
+      );
+    },
+
+    choosePlus: function(cardColor) {
+      console.log("color - " + cardColor + ";");
+      this.ajaxcall(
+        "/" + this.game_name + "/" + this.game_name + "/choosePlus.html",
         { bidColor: cardColor, lock: true },
         this,
         function (result) {},

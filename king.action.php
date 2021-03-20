@@ -22,8 +22,14 @@ class action_king extends APP_GameAction {
   public function selectBid() {
     self::setAjaxMode();
     $bid_type = self::getArg("bidId", AT_int);
+    $this->game->selectBid($bid_type);
+    self::ajaxResponse();
+  }
+
+  public function choosePlus() {
+    self::setAjaxMode();
     $bid_color = self::getArg("bidColor", AT_int);
-    $this->game->selectBid($bid_type, $bid_color);
+    $this->game->selectPlusColor($bid_color);
     self::ajaxResponse();
   }
 
