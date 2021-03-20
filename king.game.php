@@ -452,7 +452,7 @@ class King extends Table {
         }
 
         $this->gamestate->changeActivePlayer(self::getGameStateValue("bid_player"));
-        $this->gamestate->activeNextPlayer();
+        $this->activeNextPlayer();
 
         $this->gamestate->nextState("nextHand");
     }
