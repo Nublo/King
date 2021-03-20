@@ -171,8 +171,7 @@ class King extends Table {
                 array(
                     'player_name' => self::getActivePlayerName(),
                     'bid_value' => $this->bidToLongReadable($bid_type, null),
-                    'bid_type' => $bid_type,
-                    'bid_color' => $bid_color
+                    'bid_type' => $bid_type
                 )
             );
         } else {
