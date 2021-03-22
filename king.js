@@ -144,6 +144,11 @@ define([
                 _("♦️"),
                 "onPlusDiamondsSelected"
               );
+              this.addActionButton(
+                "no_trump",
+                _("no trump"),
+                "onNoTrumpSelected"
+              )
             break;
         }
       }
@@ -338,6 +343,10 @@ define([
 
     onPlusDiamondsSelected: function () {
       this.choosePlus(4);
+    },
+
+    onNoTrumpSelected: function () {
+      this.choosePlus(5);
     },
 
     selectBid: function (bidType) {

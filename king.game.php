@@ -10,7 +10,7 @@ class King extends Table {
                 "currentRound" => 10, // number, in total 27 rounds in the game
                 "firstCardPlayed" => 11,
                 "bidType" => 12, // 0-5 games, 6-8 +
-                "bidColor" => 13, // plus bid, trump value
+                "bidColor" => 13, // plus bid trump - [spade, hearts, clubs, diamonds, no_trump]
                 "lastTwoFirstId" => 14,
                 "lastTwoSecondId" => 15,
                 "bid_player" => 16,
@@ -129,7 +129,11 @@ class King extends Table {
     function bidToLongReadable($bid_type, $bid_color) {
         if (!isset($bid_type)) {
             if (isset($bid_color)) {
-                return "Trump is " . $this->colors[$bid_color]['emoji'];
+                if ($bid_color != 5) {
+                    return "Trump is " . $this->colors[$bid_color]['emoji'];
+                } else {
+                    return "No trump";
+                }
             } else {
                 return "Plus";
             }
@@ -141,8 +145,21 @@ class King extends Table {
         return $this->values_label[$card['type_arg']] . $this->colors[$card['type']]['emoji'];
     }
 
-    function isPlus() {
-        return self::getGameStateValue("bidColor") > 0 && self::getGameStateValue("bidColor") < 5;
+    function isPlus($ignore_no_trump) {
+        $rightBorder = 6;
+        if ($ignore_no_trump) {
+            $rightBorder = 5;
+        }
+        return self::getGameStateValue("bidColor") > 0 && self::getGameStateValue("bidColor") < $rightBorder;
+    }
+
+    function isCardInPlayerHand($card_id, $user_hand) {
+        foreach ($user_hand as $card) {
+            if ($card_id == $card['id']) {
+                return true;
+            }
+        }
+        return false;
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -263,6 +280,11 @@ class King extends Table {
     function playCard($card_id) {
         self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
+
+        if (!$this->isCardInPlayerHand($card_id, $this->cards->getCardsInLocation('hand', $player_id))) {
+            throw new BgaUserException("Card was already played. Refresh page");
+        }
+
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         // XXX check rules here
         $currentHand = $this->cards->getCardsInLocation('hand', $player_id);
@@ -320,7 +342,7 @@ class King extends Table {
         $this->cards->moveAllCardsInLocation(null, "deck");
         $this->cards->shuffle('deck');
         $players = self::loadPlayersBasicInfos();
-        foreach ( $players as $player_id => $player ) {
+        foreach ($players as $player_id => $player) {
             $cards = $this->cards->pickCards(10, 'deck', $player_id);
             self::notifyPlayer($player_id, 'newHand', '', array('cards' => $cards));
         }
@@ -365,7 +387,7 @@ class King extends Table {
             $currentHandTrump = self::getGameStateValue("bidColor");
             $hasTrumpInHand = false;
             foreach ($cards_on_table as $card) {
-                if ($card['type'] == $currentHandTrump && $this->isPlus()) {
+                if ($card['type'] == $currentHandTrump && $this->isPlus(true)) {
                     $hasTrumpInHand = true;
                 }
             }
@@ -479,7 +501,7 @@ class King extends Table {
         $cards = $this->cards->getCardsInLocation("cardswon");
 
         $bid_type = self::getGameStateValue("bidType");
-        if ($this->isPlus()) {
+        if ($this->isPlus(false)) {
             $this->countPointsForPlus($player_to_points, $cards);
         } else if ($bid_type == 0) {
             $this->countPointsForKing($player_to_points, $cards);
