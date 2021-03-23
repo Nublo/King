@@ -41,6 +41,7 @@ class King extends Table {
         self::reloadPlayersBasicInfos();
 
         $this->setupGlobalValues();
+        $this->setupStatistics();
         $this->setupCards();
         $this->setupPossibleBids($players);
 
@@ -56,6 +57,13 @@ class King extends Table {
         self::setGameStateValue("lastTwoFirstId", -1);
         self::setGameStateValue("lastTwoSecondId", -1);
         self::setGameStateValue("remainingMinusPoints", 0);
+    }
+
+    function setupStatistics() {
+        self::initStat("player", "self_plus", 0);
+        self::initStat("player", "others_plus", 0);
+        self::initStat("player", "self_minus", 0);
+        self::initStat("player", "others_minus", 0);
     }
 
     function setupCards() {
@@ -507,7 +515,7 @@ class King extends Table {
     }
 
     function stEndHand() {
-        $this->notifyEndHandPoints();    
+        $this->notifyEndHandPoints();
 
         if ($this->getGameStateValue("currentRound") == 27) {
             $this->gamestate->nextState("endGame");
@@ -639,6 +647,21 @@ class King extends Table {
                     'nbr' => $points
                 )
             );
+
+            $isSelfBid = self::getGameStateValue("bid_player") == $player_id;
+            if ($this->isPlus(false)) {
+                if ($isSelfBid) {
+                    self::incStat($points, "self_plus", $player_id);
+                } else {
+                    self::incStat($points, "others_plus", $player_id);
+                }
+            } else {
+                if ($isSelfBid) {
+                    self::incStat($points, "self_minus", $player_id);
+                } else {
+                    self::incStat($points, "others_minus", $player_id);
+                }
+            }
         }
     }
 
