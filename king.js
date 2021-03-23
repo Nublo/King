@@ -195,7 +195,6 @@ define([
         case 4:
           return "Hearts";
         case 5:
-          break;
           return "Nothing"
         default:
           return ""
