@@ -172,10 +172,10 @@ define([
       }
 
       if (+this.currentBidType == 0 || +this.currentBidType == 4) {
-        if (this.isHeartsPlayed) {
-          bidInfo = bidInfo + ". ♥️️ accepted";
-        } else {
+        if (!this.isHeartsPlayed) {
           bidInfo = bidInfo + ". ♥️️ rejected";
+        } else {
+          bidInfo = bidInfo + ". ♥️️ accepted";
         }
       }
 
