@@ -49,6 +49,7 @@ define([
 
       this.setupCardsInHand(this.gamedatas);
       this.setupNotifications();
+      this.updateHandInfo();
 
       dojo.connect(
         this.playerHand,
@@ -151,6 +152,65 @@ define([
               )
             break;
         }
+      }
+    },
+
+    updateHandInfo: function() {
+      if (this.bidTypeToReadable() == "" && this.plusToReadable() == "") {
+        $('handinfo').innerHTML = "Bid is not yet selected";
+        return;
+      }
+
+      var bidInfo = "Bid is: Don't take " + this.bidTypeToReadable();
+      if (bidInfo == "") {
+        bidInfo = "Bid is plus: Trump is " + this.plusToReadable();
+      }
+
+      if (+this.currentBidType == 0 || +this.currentBidType == 4) {
+        if (this.isHeartsPlayed) {
+          bidInfo = bidInfo + ". ♥️️ accepted";
+        } else {
+          bidInfo = bidInfo + ". ♥️️ rejected";
+        }
+      }
+
+      $('handinfo').innerHTML = bidInfo;
+    },
+
+    bidTypeToReadable: function() {
+      switch (+this.currentBidType) {
+        case 0:
+          return "King of hearts";
+        case 1:
+          return "Queens";
+        case 2:
+          return "Jacks";
+        case 3:
+          return "2 Last"
+        case 4:
+          return "Hearts";
+        case 5:
+          break;
+          return "Nothing"
+        default:
+          return ""
+      }
+    },
+
+    plusToReadable: function() {
+      switch (+this.currentBidColor) {
+        case 1:
+          return "♠️";
+        case 2:
+          return "♥️️";
+        case 3:
+          return "♣️";
+        case 4:
+          return "♦️";
+        case 5:
+          return "No trump";
+        default:
+          return "";
       }
     },
 
@@ -299,9 +359,7 @@ define([
       }
     },
 
-    // Bid selection
     onKingSelected: function () {
-      // console.log(event.target.id, "id");
       this.selectBid(0);
     },
 
@@ -427,6 +485,8 @@ define([
       } else {
         this.currentBidType = +notif.args.bid_type;
       }
+
+      this.updateHandInfo();
     },
 
     notif_giveBuyinToPlayer: function (notif) {
@@ -452,6 +512,8 @@ define([
         notif.args.value,
         notif.args.card_id
       );
+
+      this.updateHandInfo();
     },
 
     notif_trickWin: function (notif) {

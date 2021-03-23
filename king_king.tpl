@@ -14,6 +14,10 @@
 
 </div>
 
+<div id="handinfo">
+    <div id="info"></div>
+</div>
+
 <div id="myhand_wrap" class="whiteblock">
     <h3>{MY_HAND}</h3>
     <div id="myhand">
@@ -33,6 +37,6 @@
 var jstpl_cardontable = '<div class="cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px">\
                         </div>';
 
-</script>  
+</script>
 
 {OVERALL_GAME_FOOTER}
