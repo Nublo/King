@@ -15,6 +15,7 @@ class King extends Table {
                 "isHeartsPlayed" => 15,
                 "lastTwoFirstId" => 16,
                 "lastTwoSecondId" => 17,
+                "remainingMinusPoints" => 18,
             )
         );
 
@@ -54,6 +55,7 @@ class King extends Table {
         self::setGameStateValue("isHeartsPlayed", 0);
         self::setGameStateValue("lastTwoFirstId", -1);
         self::setGameStateValue("lastTwoSecondId", -1);
+        self::setGameStateValue("remainingMinusPoints", 0);
     }
 
     function setupCards() {
@@ -277,6 +279,24 @@ class King extends Table {
         $this->gamestate->nextState("");
     }
 
+    function takeEverything() {
+        if ($this->isPlus(false)) {
+            throw new BgaUserException("You can't take everything when playing plus");
+        }
+
+        $players = self::loadPlayersBasicInfos();
+        $active_player_id = self::getActivePlayerId();
+        foreach ($players as $player_id => $player) {
+            $this->cards->moveAllCardsInLocation('hand', 'cardswon', $player_id, $active_player_id);
+        }
+        $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $active_player_id);
+
+        $points = self::getGameStateValue("remainingMinusPoints");
+        $this->updatePlayerPoints($active_player_id, $points);
+
+        $this->gamestate->nextState("endHand");
+    }
+
     function playCard($card_id) {
         self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
@@ -351,26 +371,20 @@ class King extends Table {
         self::setGameStateValue("firstCardPlayed", 0);
         self::setGameStateValue("bidType", -1);
         self::setGameStateValue("bidColor", -1);
+        self::setGameStateValue("lastTwoFirstId", -1);
+        self::setGameStateValue("lastTwoSecondId", -1);
         self::setGameStateValue("bid_player", self::getActivePlayerId());
         self::setGameStateValue("isHeartsPlayed", 0);
+        self::setGameStateValue("remainingMinusPoints", -40);
 
         $this->gamestate->nextState("");
     }
 
-    function stNewBid() {
-        self::setGameStateValue("bidType", -1);
-        self::setGameStateValue("bidColor", -1);
-        self::setGameStateValue("lastTwoFirstId", -1);
-        self::setGameStateValue("lastTwoSecondId", -1);
-    }
+    function stNewBid() {}
 
-    function stNewPlusColor() {
+    function stNewPlusColor() {}
 
-    }
-
-    function stDiscard() {
-        // TODO add functionality. Looks like we don't need to update any state, Double check later
-    }
+    function stDiscard() {}
 
     function stNewTrick() {
         self::setGameStateInitialValue("firstCardPlayed", 0);
@@ -518,18 +532,21 @@ class King extends Table {
             foreach ($cards as $card) {
                 if ($card['type'] == 2 && $card['type_arg'] == 13) {
                     $points = -40;
+                    $this->updateRemainingMinusPoints(40);
                 }
             }
         } else if ($bid_type == 1) {
             foreach ($cards as $card) {
                 if ($card['type_arg'] == 12) {
                     $points -= 10;
+                    $this->updateRemainingMinusPoints(10);
                 }
             }
         } else if ($bid_type == 2) {
             foreach ($cards as $card) {
                 if ($card['type_arg'] == 11) {
                     $points -= 10;
+                    $this->updateRemainingMinusPoints(10);
                 }
             }
         } else if ($bid_type == 3) {
@@ -538,38 +555,46 @@ class King extends Table {
                 case 0:
                 case 1:
                     $points = -20;
+                    $this->updateRemainingMinusPoints(20);
                     break;
             }
         } else if ($bid_type == 4) {
             foreach ($cards as $card) {
                 if ($card['type'] == 2) {
                     $points -= 5;
+                    $this->updateRemainingMinusPoints(5);
                 }
             }
         } else if ($bid_type == 5) {
             $points = -4;
+            $this->updateRemainingMinusPoints(4);
         }
 
-        if ($points != 0) {
-            $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
-            self::DbQuery($sql);
-            self::notifyAllPlayers(
-                "points",
-                clienttranslate('${player_name} gets ${nbr} points'),
-                array(
-                    'player_id' => $player_id,
-                    'player_name' => $players[$player_id]['player_name'],
-                    'nbr' => $points
-                )
-            );
+        $this->updatePlayerPoints($player_id, $points);
+    }
 
-            $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-            self::notifyAllPlayers(
-                "newScores",
-                '',
-                array('newScores' => $newScores)
-            );
+    function updatePlayerPoints($player_id, $points) {
+        if ($points == 0) {
+            return;
         }
+        $players = self::loadPlayersBasicInfos();
+        $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
+        self::DbQuery($sql);
+        self::notifyAllPlayers(
+            "points",
+            clienttranslate('${player_name} gets ${nbr} points'),
+            array(
+                'player_id' => $player_id,
+                'player_name' => $players[$player_id]['player_name'],
+                'nbr' => $points
+            )
+        );
+        $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+        self::notifyAllPlayers(
+            "newScores",
+            '',
+            array('newScores' => $newScores)
+        );
     }
 
     function notifyEndHandPoints() {
@@ -661,8 +686,12 @@ class King extends Table {
     }
 
     function countPointsForLast(&$player_to_points, $cards) {
-        $player_to_points[self::getGameStateValue("lastTwoFirstId")] -= 20;
-        $player_to_points[self::getGameStateValue("lastTwoSecondId")] -= 20;
+        if (self::getGameStateValue("lastTwoFirstId") != -1) {
+            $player_to_points[self::getGameStateValue("lastTwoFirstId")] -= 20;    
+        }
+        if (self::getGameStateValue("lastTwoSecondId") != -1) {
+            $player_to_points[self::getGameStateValue("lastTwoSecondId")] -= 20;
+        }
     }
 
     function countPointsForHearts(&$player_to_points, $cards) {
@@ -688,6 +717,11 @@ class King extends Table {
             $new_points = ($result[$player_id] / 3) * 4;
             $player_to_points[$player_id] -= $new_points;
         }
+    }
+
+    function updateRemainingMinusPoints($pointsDiff) {
+        $savedPoints = self::getGameStateValue("remainingMinusPoints");
+        self::setGameStateValue("remainingMinusPoints", $savedPoints + $pointsDiff);
     }
 
 //////////////////////////////////////////////////////////////////////////////

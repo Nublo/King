@@ -1,5 +1,5 @@
 {OVERALL_GAME_HEADER}
-
+<div id ="takeeverything"></div>
 <div id="playertables">
 
     <!-- BEGIN player -->
@@ -15,7 +15,6 @@
 </div>
 
 <div id="handinfo">
-    <div id="info"></div>
 </div>
 
 <div id="myhand_wrap" class="whiteblock">

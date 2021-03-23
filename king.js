@@ -57,6 +57,11 @@ define([
         this,
         "onPlayerHandSelectionChanged"
       );
+      dojo.connect($('takeeverything'), 'onclick', this, 'onTakeEverything');
+
+      if (this.currentBidType != -1) {
+        $('takeeverything').innerHTML = "Take everything. Clickable";
+      }
     },
 
     setupCardsInHand: function (gamedatas) {
@@ -157,13 +162,13 @@ define([
 
     updateHandInfo: function() {
       if (this.bidTypeToReadable() == "" && this.plusToReadable() == "") {
-        $('handinfo').innerHTML = "Bid is not yet selected";
+        $('handinfo').innerHTML = "";
         return;
       }
 
       var bidInfo = "Bid is: Don't take " + this.bidTypeToReadable();
-      if (bidInfo == "") {
-        bidInfo = "Bid is plus: Trump is " + this.plusToReadable();
+      if (this.bidTypeToReadable() == "") {
+        bidInfo = "Bid is plus: " + this.plusToReadable();
       }
 
       if (+this.currentBidType == 0 || +this.currentBidType == 4) {
@@ -208,7 +213,7 @@ define([
         case 4:
           return "♦️";
         case 5:
-          return "No trump";
+          return "no trump";
         default:
           return "";
       }
@@ -439,6 +444,18 @@ define([
       );
     },
 
+    onTakeEverything: function() {
+      if (this.checkAction("playCard", true)) {
+        this.ajaxcall(
+          "/" + this.game_name + "/" + this.game_name + "/takeEverything.html",
+          {lock: true},
+          this,
+          function (result) {},
+          function (is_error) {}
+        );
+      }
+    },
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
@@ -464,7 +481,18 @@ define([
     },
 
     notif_newHand: function (notif) {
+      this.currentBidType = -1;
+
+      $('takeeverything').innerHTML = "";
+      this.updateHandInfo();
       this.playerHand.removeAll();
+
+      for (var player_id in this.gamedatas.players) {
+        try {
+          dojo.destroy("cardontable_" + player_id);
+        }
+        catch(e) {} // card can be missing from table
+      }
 
       for (var i in notif.args.cards) {
         var card = notif.args.cards[i];
@@ -484,6 +512,7 @@ define([
         this.currentBidType = -1;
       } else {
         this.currentBidType = +notif.args.bid_type;
+        $('takeeverything').innerHTML = "Take everything. Clickable";
       }
 
       this.updateHandInfo();

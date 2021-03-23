@@ -41,4 +41,10 @@ class action_king extends APP_GameAction {
     self::ajaxResponse();
   }
 
+  public function takeEverything() {
+    self::setAjaxMode();
+    $this->game->takeEverything();
+    self::ajaxResponse();
+  }
+
 }
