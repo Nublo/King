@@ -481,6 +481,7 @@ define([
 
     notif_newHand: function (notif) {
       this.currentBidType = -1;
+      this.currentBidColor = -1;
 
       $('takeeverything').innerHTML = "";
       this.updateHandInfo();

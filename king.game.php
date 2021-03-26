@@ -114,6 +114,7 @@ class King extends Table {
         $result['bidColor'] = self::getGameStateValue('bidColor');
         $result['isHeartsPlayed'] = self::getGameStateValue('isHeartsPlayed');
         $result['firstCardPlayed'] = self::getGameStateValue('firstCardPlayed');
+        $result['activeBids'] = self::getActiveBids();
 
         return $result;
     }
@@ -198,7 +199,8 @@ class King extends Table {
                 array(
                     'player_name' => self::getActivePlayerName(),
                     'bid_value' => $this->bidToLongReadable($bid_type, null),
-                    'bid_type' => $bid_type
+                    'bid_type' => $bid_type,
+                    'active_bids' => $this->getActiveBids()
                 )
             );
         } else {
@@ -208,7 +210,8 @@ class King extends Table {
                 array(
                     'player_name' => self::getActivePlayerName(),
                     'bid_value' => $this->bidToLongReadable(null, null),
-                    'bid_type' => $bid_type
+                    'bid_type' => $bid_type,
+                    'active_bids' => $this->getActiveBids()
                 )
             );
         }
@@ -294,6 +297,16 @@ class King extends Table {
 
         $players = self::loadPlayersBasicInfos();
         $active_player_id = self::getActivePlayerId();
+
+        if (self::getGameStateValue("bidType") == 3) {
+            if ($this->cards->countCardInLocation('hand', $active_player_id) >= 2) {
+                self::setGameStateValue("lastTwoFirstId", $active_player_id);
+                self::setGameStateValue("lastTwoSecondId", $active_player_id);
+            } else if ($this->cards->countCardInLocation('hand', $active_player_id) == 1) {
+                self::setGameStateValue("lastTwoSecondId", $active_player_id);
+            }
+        }
+
         foreach ($players as $player_id => $player) {
             $this->cards->moveAllCardsInLocation('hand', 'cardswon', $player_id, $active_player_id);
         }
