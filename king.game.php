@@ -16,6 +16,7 @@ class King extends Table {
                 "lastTwoFirstId" => 16,
                 "lastTwoSecondId" => 17,
                 "remainingMinusPoints" => 18,
+                "game_variant" => 100,
             )
         );
 
@@ -115,6 +116,7 @@ class King extends Table {
         $result['isHeartsPlayed'] = self::getGameStateValue('isHeartsPlayed');
         $result['firstCardPlayed'] = self::getGameStateValue('firstCardPlayed');
         $result['activeBids'] = self::getActiveBids();
+        $result['isPlusesSkipped'] = $this->getGameStateValue('game_variant') == 2;
 
         return $result;
     }
@@ -260,17 +262,27 @@ class King extends Table {
         self::DbQuery($sql);
         self::setGameStateValue("bidColor", $bid_color);
 
-        self::notifyAllPlayers(
-            'selectedBid',
-            clienttranslate('${player_name} selected to play ${bid_value}'),
-            array(
-                'player_name' => self::getActivePlayerName(),
-                'bid_value' => $this->bidToLongReadable(null, $bid_color),
-                'bid_color' => $bid_color
-            )
-        );
-
-        $this->gamestate->nextState("");
+        if ($this->getGameStateValue('game_variant') == 2) {
+            $this->gamestate->nextState("endHand");
+            self::notifyAllPlayers(
+                'skipPlus',
+                clienttranslate('${player_name} selected to skip plus'),
+                array(
+                    'player_name' => self::getActivePlayerName()
+                )
+            );
+        } else {
+            self::notifyAllPlayers(
+                'selectedBid',
+                clienttranslate('${player_name} selected to play ${bid_value}'),
+                array(
+                    'player_name' => self::getActivePlayerName(),
+                    'bid_value' => $this->bidToLongReadable(null, $bid_color),
+                    'bid_color' => $bid_color
+                )
+            );
+            $this->gamestate->nextState("discard");
+        }
     }
 
     function discard($card_id1, $card_id2) {
@@ -528,7 +540,9 @@ class King extends Table {
     }
 
     function stEndHand() {
-        $this->notifyEndHandPoints();
+        if ($this->getGameStateValue('game_variant') != 2 || !$this->isPlus(false)) {
+            $this->notifyEndHandPoints();
+        }
 
         if ($this->getGameStateValue("currentRound") == 27) {
             $this->gamestate->nextState("endGame");

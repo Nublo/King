@@ -37,7 +37,7 @@ $machinestates = array(
         "type" => "activeplayer",
         "action" => "stNewPlusColor",
         "possibleactions" => array("choosePlus"),
-        "transitions" => array("" => 23)
+        "transitions" => array("discard" => 23, "endHand" => 40)
     ),
     23 => array(
         "name" => "discard",
