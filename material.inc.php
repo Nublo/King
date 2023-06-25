@@ -14,12 +14,12 @@ $this->colors = array(
     3 => array(
     	'name' => clienttranslate('club'),
         'nametr' => self::_('club'),
-        'emoji' => '♣️'
+        'emoji' => '☘️'
     ),
     4 => array(
     	'name' => clienttranslate('diamond'),
         'nametr' => self::_('diamond'),
-        'emoji' => '♦️'
+        'emoji' => '🔹'
     )
 );
 
@@ -57,5 +57,5 @@ $this->bids_long_label = array(
     2 => "Don't take Jacks",
     3 => "Don't take 2 Last",
     4 => "Don't take Hearts",
-    5 => "Don't take Anything"
+    5 => "Take Nothing"
 );
