@@ -1,10 +1,10 @@
 <?php
   require_once( APP_BASE_PATH."view/common/game.view.php" );
   
-  class view_king_king extends game_view
+  class view_kingofhearts_kingofhearts extends game_view
   {
     function getGameName() {
-        return "king";
+        return "kingofhearts";
     }
   	function build_page($viewArgs)
   	{		

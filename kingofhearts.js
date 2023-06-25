@@ -5,7 +5,7 @@ define([
   "ebg/counter",
   "ebg/stock",
 ], function (dojo, declare) {
-  return declare("bgagame.king", ebg.core.gamegui, {
+  return declare("bgagame.kingofhearts", ebg.core.gamegui, {
     constructor: function () {
       this.cardwidth = 72;
       this.cardheight = 96;

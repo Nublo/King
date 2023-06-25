@@ -1,40 +1,30 @@
 <?php
 
-/*
-    From this file, you can edit the various meta-information of your game.
-
-    Once you modified the file, don't forget to click on "Reload game informations" from the Control Panel in order in can be taken into account.
-
-    See documentation about this file here:
-    http://en.doc.boardgamearena.com/Game_meta-information:_gameinfos.inc.php
-
-*/
-
 $gameinfos = array( 
 
 // Name of the game in English (will serve as the basis for translation) 
 'game_name' => "King",
 
 // Game designer (or game designers, separated by commas)
-'designer' => 'Unknown',       
+'designer' => '(Uncredited)',       
 
 // Game artist (or game artists, separated by commas)
-'artist' => 'Unknown',         
+'artist' => '',         
 
 // Year of FIRST publication of this game. Can be negative.
-'year' => 1920,                 
+'year' => 0,                 
 
 // Game publisher (use empty string if there is no publisher)
-'publisher' => '',                     
+'publisher' => '(Public Domain)',                     
 
 // Url of game publisher website
 'publisher_website' => '',   
 
 // Board Game Geek ID of the publisher
-'publisher_bgg_id' => 0,
+'publisher_bgg_id' => 171,
 
-// Board game geek ID of the game
-'bgg_id' => 0,
+// Board game geek if of the game
+'bgg_id' => 11581,
 
 // Players configuration that can be played (ex: 2 to 4 players)
 'players' => array( 3 ),    
@@ -141,15 +131,4 @@ $gameinfos = array(
 //  IMPORTANT: this list should be ORDERED, with the most important tag first.
 //  IMPORTANT: it is mandatory that the FIRST tag is 1, 2, 3 and 4 (= game category)
 'tags' => array( 2,23,200 ),
-
-
-//////// BGA SANDBOX ONLY PARAMETERS (DO NOT MODIFY)
-
-// simple : A plays, B plays, C plays, A plays, B plays, ...
-// circuit : A plays and choose the next player C, C plays and choose the next player D, ...
-// complex : A+B+C plays and says that the next player is A+B
-'is_sandbox' => false,
-'turnControl' => 'simple'
-
-////////
 );

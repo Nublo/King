@@ -57,5 +57,5 @@ $this->bids_long_label = array(
     2 => "Don't take Jacks",
     3 => "Don't take 2 Last",
     4 => "Don't take Hearts",
-    5 => "Don't take Nothing"
+    5 => "Don't take Anything"
 );

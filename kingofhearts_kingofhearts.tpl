@@ -1,5 +1,5 @@
 {OVERALL_GAME_HEADER}
-<div id ="takeeverything"></div>
+<button id="takeeverything"></button>
 <div id="playertables">
 
     <!-- BEGIN player -->
