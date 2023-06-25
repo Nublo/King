@@ -1,5 +1,4 @@
 {OVERALL_GAME_HEADER}
-<button id="takeeverything"></button>
 <div id="playertables">
 
     <!-- BEGIN player -->

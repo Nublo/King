@@ -26,10 +26,10 @@ class action_kingofhearts extends APP_GameAction {
     self::ajaxResponse();
   }
 
-  public function choosePlus() {
+  public function choosePlusColor() {
     self::setAjaxMode();
     $bid_color = self::getArg("bidColor", AT_int);
-    $this->game->selectPlusColor($bid_color);
+    $this->game->choosePlusColor($bid_color);
     self::ajaxResponse();
   }
 

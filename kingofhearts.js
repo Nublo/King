@@ -57,11 +57,6 @@ define([
         this,
         "onPlayerHandSelectionChanged"
       );
-      dojo.connect($('takeeverything'), 'onclick', this, 'onTakeEverything');
-
-      if (this.currentBidType != -1) {
-        $('takeeverything').innerHTML = "Take everything. Clickable";
-      }
     },
 
     setupCardsInHand: function (gamedatas) {
@@ -137,7 +132,7 @@ define([
               );
               this.addActionButton(
                 "bid_plus_hearts",
-                _("♥️️"),
+                _("❤️"),
                 "onPlusHeartsSelected"
               );
               this.addActionButton(
@@ -156,6 +151,16 @@ define([
                 "onNoTrumpSelected"
               )
             break;
+          case "playerTurn":
+            var bidType = +this.currentBidType
+            if (bidType >= 0 && bidType < 6) {
+              this.addActionButton(
+                "take_all",
+                _("take all"),
+                "onTakeEverything"
+              );
+            }
+            break;
         }
       }
     },
@@ -173,9 +178,9 @@ define([
 
       if (+this.currentBidType == 0 || +this.currentBidType == 4) {
         if (!this.isHeartsPlayed) {
-          bidInfo = bidInfo + ". ♥️️ rejected";
+          bidInfo = bidInfo + ". ❤️ rejected";
         } else {
-          bidInfo = bidInfo + ". ♥️️ accepted";
+          bidInfo = bidInfo + ". ❤️ accepted";
         }
       }
 
@@ -206,11 +211,11 @@ define([
         case 1:
           return "♠️";
         case 2:
-          return "♥️️";
+          return "❤️";
         case 3:
-          return "♣️";
+          return "☘";
         case 4:
-          return "♦️";
+          return "🔹";
         case 5:
           return "no trump";
         default:
@@ -435,7 +440,7 @@ define([
     choosePlus: function(cardColor) {
       console.log("color - " + cardColor + ";");
       this.ajaxcall(
-        "/" + this.game_name + "/" + this.game_name + "/choosePlus.html",
+        "/" + this.game_name + "/" + this.game_name + "/choosePlusColor.html",
         { bidColor: cardColor, lock: true },
         this,
         function (result) {},
@@ -485,7 +490,6 @@ define([
       this.isHeartsPlayed = 0;
       this.firstCardPlayed = 0;
 
-      $('takeeverything').innerHTML = "";
       this.updateHandInfo();
       this.playerHand.removeAll();
 
@@ -514,7 +518,6 @@ define([
         this.currentBidType = -1;
       } else {
         this.currentBidType = +notif.args.bid_type;
-        $('takeeverything').innerHTML = "Take everything. Clickable";
       }
 
       this.updateHandInfo();

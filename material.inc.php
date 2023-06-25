@@ -9,7 +9,7 @@ $this->colors = array(
     2 => array(
     	'name' => clienttranslate('heart'),
     	'nametr' => self::_('heart'),
-        'emoji' => '♥️️'
+        'emoji' => '❤️'
     ),
     3 => array(
     	'name' => clienttranslate('club'),

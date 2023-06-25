@@ -17,6 +17,7 @@ class Kingofhearts extends Table {
                 "lastTwoSecondId" => 17,
                 "remainingMinusPoints" => 18,
                 "game_variant" => 100,
+                "logs_variant" => 101,
             )
         );
 
@@ -249,8 +250,9 @@ class Kingofhearts extends Table {
         }
     }
 
-    function selectPlusColor($bid_color) {
-        self::checkAction("selectPlusColor");
+    function choosePlusColor($bid_color) {
+        // TODO find out what checkAction should be used here
+        // self::checkAction("choosePlusColor");
         $player_id = self::getActivePlayerId();
         $sql = "SELECT bid_type FROM bid WHERE player_id = '$player_id' AND is_plus = 1 AND is_allowed = 1 LIMIT 1";
         $result = self::DbQuery($sql);
@@ -355,9 +357,13 @@ class Kingofhearts extends Table {
         if ($currentCard['type'] == 2) {
             self::setGameStateValue("isHeartsPlayed", 1);
         }
+        $logs_info = '';
+        if ($this->getGameStateValue('logs_variant') == 2) {
+          $logs_info = clienttranslate('${player_name} plays ${value_displayed}');
+        }
         self::notifyAllPlayers(
             'playCard',
-            '',
+            $logs_info,
             array(
                 'i18n' => array('color_displayed', 'value_displayed'),
                 'card_id' => $card_id,
