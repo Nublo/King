@@ -142,12 +142,12 @@ define([
               );
               this.addActionButton(
                 "bid_plus_clubs",
-                _("♣️"),
+                _("☘️"),
                 "onPlusClubsSelected"
               );
               this.addActionButton(
                 "bid_plus_diamonds",
-                _("♦️"),
+                _("🔹"),
                 "onPlusDiamondsSelected"
               );
               this.addActionButton(
@@ -482,6 +482,8 @@ define([
     notif_newHand: function (notif) {
       this.currentBidType = -1;
       this.currentBidColor = -1;
+      this.isHeartsPlayed = 0;
+      this.firstCardPlayed = 0;
 
       $('takeeverything').innerHTML = "";
       this.updateHandInfo();
